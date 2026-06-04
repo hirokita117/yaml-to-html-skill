@@ -1,0 +1,144 @@
+# Portable agent definition for the adaptive-understanding-html skill.
+# This describes the skill for non-Claude (e.g. OpenAI-style) agent runtimes.
+# It mirrors SKILL.md: the same flow, the same scripts, the same safety contract.
+
+name: adaptive-understanding-html
+version: 1
+description: >
+  Generate a single self-contained HTML file that helps a user understand a document,
+  repository, pull request, design note, or specification through a personalized visual
+  explanation. The HTML shows a tailored explanation UI inside a sandboxed iframe, and
+  copyable prompt templates outside the iframe so the user can ask another AI to
+  regenerate or transform the explanation (table, worktree, cards, FAQ, comparison,
+  sequence, story, reading order, impact map, etc.).
+
+# When a routing layer should pick this skill.
+use_when:
+  - user pastes a document / repo summary / PR diff / README / design doc / spec and
+    wants to understand it
+  - user wants an offline HTML explainer with an iframe UI and copyable prompts
+  - user wants to re-target the same content at a different audience or representation
+do_not_use_when:
+  - user wants a web app, server, API, or chat UI
+  - user wants live data, network calls, or persistence
+
+model:
+  recommended: gpt-4-class or stronger
+  temperature: 0.4
+  notes: >
+    Reasoning quality matters more than speed. The model authors core.yaml, view.yaml,
+    and the iframe HTML; the scripts only assemble and validate.
+
+# The pipeline this agent follows. The renderer is NOT the center: meaning (core.yaml)
+# and strategy (view.yaml) are, followed by flexible HTML generation and prompt templates.
+workflow:
+  - id: read_input
+    goal: identify the understanding target and its type
+  - id: build_core_yaml
+    goal: capture semantic structure (concepts, relations, importance, difficulty,
+      confidence, questions, risks, source_refs)
+    schema: references/core-yaml-schema.md
+  - id: build_view_yaml
+    goal: decide presentation strategy for this reader (audience, preferred/avoided
+      forms, density, emphasis, html_generation_policy); state assumptions if inferred
+    schema: references/view-yaml-schema.md
+  - id: generate_iframe_html
+    goal: author a full self-contained HTML document as the explanation UI; pick forms
+      from view.yaml; include concepts, relations, reading order, source refs, and next
+      questions; give it visual structure
+    rules: references/html-generation-rules.md
+  - id: generate_prompts_json
+    goal: author the outside-iframe transform templates (regenerate-full, iframe-only,
+      table, worktree, beginner, engineer, pdm/biz, free-form)
+    rules: references/prompt-template-patterns.md
+  - id: assemble
+    goal: build the single HTML file
+    tool: build_html
+  - id: validate
+    goal: enforce the safety / self-containment contract
+    tool: validate_html
+  - id: repair
+    goal: fix any validator finding and re-validate before delivery
+
+# The scripts exposed as callable tools. They are assemblers/checkers, not renderers.
+tools:
+  - name: build_html
+    type: shell
+    command: python3 scripts/build_html.py
+    description: >
+      Assemble the outer two-pane shell, embed the iframe document (sandboxed srcdoc),
+      render the prompt templates as copyable cards, and embed core.yaml / view.yaml as
+      metadata. Substitutes {{core_yaml}} / {{view_yaml}} placeholders in prompts.
+    args:
+      - name: --core
+        required: false
+        description: path to core.yaml
+      - name: --view
+        required: false
+        description: path to view.yaml
+      - name: --iframe
+        required: true
+        description: path to the iframe HTML document (the explanation UI)
+      - name: --prompts
+        required: true
+        description: path to prompts.json (array of prompt-template objects)
+      - name: --output
+        required: true
+        description: path to write the assembled HTML
+      - name: --title
+        required: false
+      - name: --subtitle
+        required: false
+  - name: validate_html
+    type: shell
+    command: python3 scripts/validate_html.py
+    description: >
+      Scan the generated HTML for unsafe / non-self-contained patterns. Exits non-zero on
+      any error. A required sandboxed iframe is allowed; an external-loading iframe is not.
+    args:
+      - name: files
+        required: true
+        description: one or more HTML files to validate
+      - name: --strict
+        required: false
+        description: also fail on warnings
+
+# Hard constraints. The validator enforces these; the model must honor them while authoring.
+constraints:
+  output: single self-contained HTML file, opens offline in a browser
+  iframe:
+    required: true
+    embed_via: srcdoc
+    sandbox: allow-scripts
+    forbid: allow-same-origin
+  forbidden:
+    - external <script src> / external CSS / external (remote) iframe
+    - <object> / <embed>
+    - fetch / XMLHttpRequest / WebSocket
+    - localStorage / sessionStorage / document.cookie
+    - access to window.parent or window.top / top navigation
+    - form submit to an endpoint
+    - embedded API keys or secrets
+    - large verbatim dumps of the source text
+  outside_iframe: copyable prompt templates only — never a chat UI
+
+inputs:
+  - pasted document
+  - repository summary
+  - PR / diff summary
+  - README
+  - design document
+  - any technical or business text
+
+outputs:
+  - a single HTML file (iframe explanation UI + copyable prompt templates)
+  - optionally the intermediate core.yaml and view.yaml
+
+references:
+  - SKILL.md
+  - references/core-yaml-schema.md
+  - references/view-yaml-schema.md
+  - references/html-generation-rules.md
+  - references/prompt-template-patterns.md
+  - references/output-html-structure.md
+  - references/examples.md

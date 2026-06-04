@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR #482 を理解する — engineer view</title>
+<style>
+:root{
+  --bg:#f7f8fa; --card:#fff; --border:#e3e6ec; --text:#1d2330; --muted:#5b6577;
+  --accent:#2b6cff; --green:#1a9e6b; --amber:#c98a00; --red:#d6453c; --chip:#eef1f6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",Meiryo,sans-serif;
+  line-height:1.6;padding:18px;font-size:14px}
+h1{font-size:18px;margin:0 0 2px}
+h2{font-size:15px;margin:22px 0 8px;display:flex;align-items:center;gap:8px}
+h2 .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:12px;font-weight:700}
+.lead{color:var(--muted);margin:0 0 6px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.toolbar button{border:1px solid var(--border);background:var(--card);border-radius:999px;
+  padding:5px 12px;font-size:12px;cursor:pointer;color:var(--muted)}
+.toolbar button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin:10px 0}
+.badges{display:inline-flex;gap:6px;flex-wrap:wrap;vertical-align:middle}
+.badge{font-size:11px;border-radius:6px;padding:1px 7px;border:1px solid var(--border);background:var(--chip);color:var(--muted)}
+.badge.imp-high{background:#fde8e6;color:var(--red);border-color:#f6c9c5}
+.badge.imp-medium{background:#fff2d6;color:var(--amber);border-color:#f0debf}
+.badge.diff-high{background:#e7e0ff;color:#5a3bd0;border-color:#d2c6f7}
+.badge.conf{background:#e3f3ec;color:var(--green);border-color:#c3e6d6}
+.concept{border-left:3px solid var(--accent);padding-left:12px;margin:10px 0}
+.concept.hidden{display:none}
+.concept h3{margin:0;font-size:14px}
+.concept p{margin:4px 0;color:var(--muted)}
+.tree{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+.tree details{margin:2px 0}
+.tree summary{cursor:pointer;list-style:none}
+.tree summary::-webkit-details-marker{display:none}
+.tree summary::before{content:"▸ ";color:var(--muted)}
+.tree details[open]>summary::before{content:"▾ "}
+.tree .leaf{padding:2px 0 2px 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tag-order{background:var(--accent);color:#fff;border-radius:5px;padding:0 6px;font-size:11px}
+.tag-impact{background:#fde8e6;color:var(--red);border-radius:5px;padding:0 6px;font-size:11px}
+.rel{display:flex;gap:8px;align-items:baseline;margin:6px 0;flex-wrap:wrap}
+.rel .from,.rel .to{font-weight:600}
+.rel .arrow{color:var(--accent)}
+.rel .why{color:var(--muted);font-size:12px}
+ol.path{margin:6px 0 0;padding-left:20px}
+ol.path li{margin:4px 0}
+ul.check{list-style:none;padding:0;margin:6px 0}
+ul.check li{display:flex;gap:8px;align-items:flex-start;margin:6px 0}
+ul.check input{margin-top:4px}
+.risk{border-left:3px solid var(--red);padding-left:12px;margin:10px 0}
+.risk.sev-medium{border-left-color:var(--amber)}
+.q{background:var(--chip);border-radius:8px;padding:8px 10px;margin:6px 0}
+.q .why{color:var(--muted);font-size:12px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--muted)}
+.src b{color:var(--text)}
+footer{margin-top:18px;color:var(--muted);font-size:12px;border-top:1px solid var(--border);padding-top:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>PR #482 — Add rate limiting to the public API</h1>
+  <p class="lead">エンジニア向け理解ビュー：ワークツリー＋読む順番＋レビュー観点。出典は本文の参照元から。</p>
+  <p class="src">source: <b>PR #482 (feature/api-rate-limit)</b> · confidence は概算です。</p>
+</header>
+
+<div class="toolbar" role="group" aria-label="表示フィルタ">
+  <button type="button" id="f-all" aria-pressed="true">すべて表示</button>
+  <button type="button" id="f-high" aria-pressed="false">重要度 high のみ</button>
+  <button type="button" id="t-expand" aria-pressed="false">ツリーを全部開く</button>
+</div>
+
+<h2><span class="num">1</span>ワークツリー（読む順番つき）</h2>
+<div class="card tree" id="tree">
+  <details open>
+    <summary>src/api/middleware/</summary>
+    <div class="leaf"><span class="tag-order">1</span> rate_limit.py <span class="tag-impact">影響大</span> — 入口。allow/deny の判断。</div>
+    <div class="leaf"><span class="tag-order">2</span> token_bucket.py <span class="tag-impact">影響大</span> — 許可判定の本体。</div>
+  </details>
+  <details>
+    <summary>config/</summary>
+    <div class="leaf"><span class="tag-order">3</span> rate_limits.yaml — ルートごとの上限。</div>
+  </details>
+  <details>
+    <summary>tests/api/</summary>
+    <div class="leaf"><span class="tag-order">4</span> test_rate_limit.py — 期待挙動の一番確実な仕様。</div>
+  </details>
+</div>
+
+<h2><span class="num">2</span>重要概念</h2>
+<div class="card" id="concepts">
+  <div class="concept" data-importance="high">
+    <h3>RateLimitMiddleware
+      <span class="badges">
+        <span class="badge imp-high">重要度 high</span>
+        <span class="badge">難易度 medium</span>
+        <span class="badge conf">confidence 0.90</span>
+      </span></h3>
+    <p>リクエストを横取りして上限超過を 429 で弾く。各 public route をラップする。</p>
+    <p class="src"><b>src/api/middleware/rate_limit.py</b> : 14–76</p>
+  </div>
+  <div class="concept" data-importance="high">
+    <h3>TokenBucketStore
+      <span class="badges">
+        <span class="badge imp-high">重要度 high</span>
+        <span class="badge diff-high">難易度 high</span>
+        <span class="badge conf">confidence 0.85</span>
+      </span></h3>
+    <p>client+route ごとのトークンバケツ。経過時間で補充。許可判定の単一の真実源。</p>
+    <p class="src"><b>src/api/middleware/token_bucket.py</b> : 1–120</p>
+  </div>
+  <div class="concept" data-importance="medium">
+    <h3>Per-route limits config
+      <span class="badges">
+        <span class="badge imp-medium">重要度 medium</span>
+        <span class="badge">難易度 low</span>
+        <span class="badge conf">confidence 0.95</span>
+      </span></h3>
+    <p>ルート→上限のマップ。起動時に読み込み、未知ルートは default に落ちる。</p>
+    <p class="src"><b>config/rate_limits.yaml</b> : 1–12</p>
+  </div>
+</div>
+
+<h2><span class="num">3</span>関係性</h2>
+<div class="card">
+  <div class="rel"><span class="from">RateLimitMiddleware</span><span class="arrow">— depends_on →</span><span class="to">TokenBucketStore</span><span class="why">トークンを要求して allow/deny を決める</span></div>
+  <div class="rel"><span class="from">RateLimitMiddleware</span><span class="arrow">— depends_on →</span><span class="to">Per-route config</span><span class="why">リクエスト時に上限を引く</span></div>
+  <div class="rel"><span class="from">Rate limit tests</span><span class="arrow">— explains →</span><span class="to">RateLimitMiddleware</span><span class="why">意図した挙動を最も明確に示す</span></div>
+</div>
+
+<h2><span class="num">4</span>次に読むべき箇所</h2>
+<div class="card">
+  <ol class="path">
+    <li><b>rate_limit.py</b> の <code>__call__</code> — 全体の制御フロー。</li>
+    <li><b>token_bucket.py</b> の <code>take()</code> / refill ロジック — ここが核心で難しい。</li>
+    <li><b>rate_limits.yaml</b> — 既定値と上書きの形を把握。</li>
+    <li><b>test_rate_limit.py</b> — 期待挙動を確定。</li>
+  </ol>
+</div>
+
+<h2><span class="num">5</span>レビュー観点チェックリスト</h2>
+<div class="card">
+  <ul class="check">
+    <li><input type="checkbox"><span>マルチインスタンス時、上限が実質 ×インスタンス数 にならないか。</span></li>
+    <li><input type="checkbox"><span>client key の作り方は妥当か。偽装で回避できないか。</span></li>
+    <li><input type="checkbox"><span>バケツが evict されず、メモリが無限に増えないか。</span></li>
+    <li><input type="checkbox"><span>429 のレスポンス形・Retry 情報は適切か。</span></li>
+    <li><input type="checkbox"><span>refill の時刻計算が偽クロックのテストで担保されているか。</span></li>
+  </ul>
+</div>
+
+<h2><span class="num">6</span>リスク</h2>
+<div class="card">
+  <div class="risk sev-high"><b>Per-process limits（severity: high）</b><p class="src" style="margin:4px 0 0">実効上限がインスタンス数に比例。グローバルな保証にならない。関連: TokenBucketStore / RateLimitMiddleware</p></div>
+  <div class="risk sev-medium"><b>Unbounded bucket growth（severity: medium）</b><p class="src" style="margin:4px 0 0">バケツが破棄されず、キー種類が増えるとメモリ増。関連: TokenBucketStore</p></div>
+</div>
+
+<h2><span class="num">7</span>次に AI に聞くとよい質問</h2>
+<div class="card">
+  <div class="q">複数インスタンスで動くとき、上限はどう振る舞う？<div class="why">なぜ重要: in-memory バケツはプロセス毎なので実効上限が増える。</div></div>
+  <div class="q">client key はどう導出され、偽装できる？<div class="why">なぜ重要: 弱いキーは上限回避を許す。</div></div>
+</div>
+
+<h2><span class="num">8</span>出典（source references）</h2>
+<div class="card src">
+  <div><b>src/api/middleware/rate_limit.py</b> — class RateLimitMiddleware ...</div>
+  <div><b>src/api/middleware/token_bucket.py</b> — class TokenBucketStore ...</div>
+  <div><b>config/rate_limits.yaml</b> — default: 60 ...</div>
+  <div><b>PR #482</b> — Add rate limiting to the public API ...</div>
+</div>
+
+<footer>このビューは理解補助です。確実なことはコードとテストで確認してください。</footer>
+
+<script>
+(function(){
+  "use strict";
+  var concepts = document.querySelectorAll(".concept");
+  var btnAll = document.getElementById("f-all");
+  var btnHigh = document.getElementById("f-high");
+  var btnExpand = document.getElementById("t-expand");
+  function setFilter(onlyHigh){
+    for (var i = 0; i < concepts.length; i++){
+      var keep = !onlyHigh || concepts[i].getAttribute("data-importance") === "high";
+      concepts[i].classList.toggle("hidden", !keep);
+    }
+    btnAll.setAttribute("aria-pressed", onlyHigh ? "false" : "true");
+    btnHigh.setAttribute("aria-pressed", onlyHigh ? "true" : "false");
+  }
+  btnAll.addEventListener("click", function(){ setFilter(false); });
+  btnHigh.addEventListener("click", function(){ setFilter(true); });
+  btnExpand.addEventListener("click", function(){
+    var open = btnExpand.getAttribute("aria-pressed") !== "true";
+    var nodes = document.querySelectorAll("#tree details");
+    for (var i = 0; i < nodes.length; i++){ nodes[i].open = open; }
+    btnExpand.setAttribute("aria-pressed", open ? "true" : "false");
+    btnExpand.textContent = open ? "ツリーを全部閉じる" : "ツリーを全部開く";
+  });
+})();
+</script>
+</body>
+</html>

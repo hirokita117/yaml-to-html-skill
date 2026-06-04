@@ -1,0 +1,15 @@
+# Generated artifacts (regenerate with scripts/build_html.py)
+sample-output.html
+*output.html
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

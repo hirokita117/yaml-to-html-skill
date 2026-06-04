@@ -1,0 +1,147 @@
+version: core/v1
+
+# Semantic structure of the understanding target.
+# This is NOT a UI spec — it captures meaning, importance, difficulty, and evidence.
+target:
+  type: pull_request
+  title: "Add rate limiting to the public API"
+  summary: >
+    Introduces a token-bucket rate limiter as middleware on the public API.
+    Limits are configurable per route and enforced before handlers run.
+  source_label: "PR #482 (feature/api-rate-limit)"
+
+concepts:
+  - id: c_middleware
+    label: "RateLimitMiddleware"
+    kind: module
+    summary: "Intercepts requests and rejects those over the limit."
+    detail: >
+      Wraps each public route. Reads a key from the client, asks the store whether
+      a token is available, and returns 429 when the bucket is empty.
+    importance: high
+    difficulty: medium
+    confidence: 0.9
+    source_refs:
+      - id: r_mw
+        path: "src/api/middleware/rate_limit.py"
+        excerpt: "class RateLimitMiddleware: def __call__(self, request, call_next): ..."
+        lines:
+          start: 14
+          end: 76
+
+  - id: c_store
+    label: "TokenBucketStore"
+    kind: module
+    summary: "In-memory token buckets keyed by client + route."
+    detail: >
+      Holds bucket state and refills tokens based on elapsed time. The single
+      source of truth for whether a request is allowed.
+    importance: high
+    difficulty: high
+    confidence: 0.85
+    source_refs:
+      - id: r_store
+        path: "src/api/middleware/token_bucket.py"
+        excerpt: "def take(self, key): refill(); return self.tokens[key] > 0"
+        lines:
+          start: 1
+          end: 120
+
+  - id: c_config
+    label: "Per-route limits config"
+    kind: concept
+    summary: "Declares requests-per-minute for each route."
+    detail: "A mapping of route -> limit, loaded at startup. Unknown routes fall back to a default."
+    importance: medium
+    difficulty: low
+    confidence: 0.95
+    source_refs:
+      - id: r_cfg
+        path: "config/rate_limits.yaml"
+        excerpt: "default: 60\nroutes:\n  /search: 20"
+        lines:
+          start: 1
+          end: 12
+
+  - id: c_tests
+    label: "Rate limit tests"
+    kind: file
+    summary: "Covers allow, reject, and refill-over-time behavior."
+    detail: "Drives the middleware with a fake clock so refill timing is deterministic."
+    importance: medium
+    difficulty: medium
+    confidence: 0.9
+    source_refs:
+      - id: r_tests
+        path: "tests/api/test_rate_limit.py"
+        excerpt: "def test_rejects_when_bucket_empty(): ..."
+        lines:
+          start: 1
+          end: 140
+
+relations:
+  - id: rel_mw_store
+    from: c_middleware
+    to: c_store
+    type: depends_on
+    label: "asks for a token"
+    reason: "The middleware decides allow/deny by calling the store."
+    confidence: 0.95
+  - id: rel_mw_config
+    from: c_middleware
+    to: c_config
+    type: depends_on
+    label: "reads limits"
+    reason: "Per-route limit is looked up at request time."
+    confidence: 0.9
+  - id: rel_tests_mw
+    from: c_tests
+    to: c_middleware
+    type: explains
+    label: "exercises"
+    reason: "Tests are the clearest spec of intended behavior."
+    confidence: 0.8
+
+questions:
+  - id: q_distributed
+    question: "What happens to limits when the service runs on multiple instances?"
+    why_it_matters: "In-memory buckets are per-process, so the real limit multiplies by instance count."
+    related_concept_ids: [c_store]
+  - id: q_key
+    question: "How is the client key derived, and can it be spoofed?"
+    why_it_matters: "A weak key lets a caller bypass the limit."
+    related_concept_ids: [c_middleware]
+
+risks:
+  - id: risk_memory
+    label: "Unbounded bucket growth"
+    description: "Buckets are never evicted, so many distinct keys could grow memory."
+    severity: medium
+    related_concept_ids: [c_store]
+  - id: risk_distributed
+    label: "Per-process limits"
+    description: "Effective limit scales with instance count; not a global guarantee."
+    severity: high
+    related_concept_ids: [c_store, c_middleware]
+
+source_refs:
+  - id: r_mw
+    title: "rate_limit.py"
+    type: file
+    path: "src/api/middleware/rate_limit.py"
+    excerpt: "class RateLimitMiddleware ..."
+  - id: r_store
+    title: "token_bucket.py"
+    type: file
+    path: "src/api/middleware/token_bucket.py"
+    excerpt: "class TokenBucketStore ..."
+  - id: r_cfg
+    title: "rate_limits.yaml"
+    type: file
+    path: "config/rate_limits.yaml"
+    excerpt: "default: 60 ..."
+  - id: r_pr
+    title: "PR description"
+    type: diff
+    path: "PR #482"
+    excerpt: "Add rate limiting to the public API ..."

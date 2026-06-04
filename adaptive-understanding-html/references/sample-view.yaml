@@ -1,0 +1,55 @@
+version: view/v1
+
+# How to present the target so THIS reader understands it fastest.
+# This is a strategy for the HTML-generating AI, not a renderer command.
+audience:
+  role: engineer
+  familiarity: intermediate
+  stated_preferences:
+    - worktree
+    - reading_order
+    - review_checklist
+  dislikes:
+    - dense_table
+
+intent:
+  primary_goal: "Review this PR confidently in a short time."
+  secondary_goals:
+    - "Know which files to read first."
+    - "Spot the risky parts before approving."
+
+presentation:
+  preferred_forms:
+    - worktree
+    - reading_path
+    - review_checklist
+  avoid_forms:
+    - dense_table
+  density: medium
+  tone: technical
+  visual_style: "clean, readable, structural; not decorative"
+  interaction_level: medium
+
+focus:
+  emphasize:
+    - dependencies
+    - reading_order
+    - impact
+    - risks
+  de_emphasize:
+    - minor_details
+
+html_generation_policy:
+  allow_creative_layout: true
+  must_include:
+    - overview
+    - source_references
+    - prompt_templates
+  should_include:
+    - progressive_disclosure
+    - visual_grouping
+    - next_questions
+  must_not_include:
+    - external_script
+    - remote_css
+    - network_request
