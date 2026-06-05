@@ -71,9 +71,9 @@ single HTML (iframe = explanation UI; outside iframe = prompt templates)
 7. **Validate** with `scripts/validate_html.py`. It checks for unsafe / non-self-contained
    patterns and exits non-zero on any error.
 
-8. **Fix and re-validate** if there are findings, then hand the user a file that opens
-   directly in a browser with no network access. Summarize what is inside the iframe and
-   which transform templates are available outside it.
+8. **Fix and re-validate** until `scripts/validate_html.py` exits 0 (no errors). Only then
+   hand the user a file that opens directly in a browser with no network access. Summarize
+   what is inside the iframe and which transform templates are available outside it.
 
 ## Using the scripts
 
@@ -103,6 +103,23 @@ python scripts/validate_html.py output.html
 `build_html.py` is an **assembler**, not a renderer: it never turns `core.yaml` into a
 fixed diagram. The understanding UI is the iframe document you authored in step 4.
 
+## Troubleshooting
+
+- **`validate_html.py` fails on an `http://` / `https://` string** — a URL leaked into a
+  `source_ref` or a prompt body. URLs are labels here, not live links: drop the scheme
+  (write `example.com/path`) or remove the URL, then re-validate.
+- **`validate_html.py` fails on `fetch(` / `XMLHttpRequest` / `localStorage` / etc.** — the
+  forbidden token appears literally inside a prompt body. Reword it generically; see
+  `references/prompt-template-patterns.md` → "Safety wording inside prompt bodies".
+- **`build_html.py: input file not found`** — check the `--iframe` / `--prompts` / `--core`
+  / `--view` paths.
+- **`build_html.py: could not parse prompts JSON`** — `prompts.json` must be a JSON array of
+  objects (see `references/prompt-template-patterns.md`).
+- **Loop / exit condition** — repeat step 8 (fix → re-validate) until `validate_html.py`
+  exits 0. Only then hand the file to the user.
+- **Empty or trivial input** — if there is no real target to explain, ask the user for the
+  actual document / repo / PR first; do not emit an empty explainer.
+
 ## Try it with the bundled sample
 
 ```bash
@@ -119,6 +136,12 @@ python scripts/validate_html.py sample-output.html
 Open `sample-output.html` in a browser. The right pane shows an engineer-oriented PR
 explanation (worktree + reading order + review checklist); the left pane has the
 copyable transform templates.
+
+## Examples
+
+Three worked end-to-end examples (engineer PR / PdM spec / beginner doc), each showing the
+input, the `core.yaml` / `view.yaml` intent, and the inside-vs-outside-iframe split, live in
+`references/examples.md`. The bundled sample implements Example 1.
 
 ## Reference material
 

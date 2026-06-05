@@ -70,26 +70,29 @@ scripts only **assemble** and **validate**; they never derive a diagram from `co
 ## Repository layout
 
 ```
-adaptive-understanding-html/
-  SKILL.md                          entry point + step-by-step procedure
-  agents/
-    openai.yaml                     portable agent definition for non-Claude runtimes
-  scripts/
-    build_html.py                   assemble the single HTML (assembler, not renderer)
-    validate_html.py                safety / self-containment linter
-  references/
-    core-yaml-schema.md             meaning structure schema
-    view-yaml-schema.md             presentation strategy schema
-    html-generation-rules.md        safety + UI rules for generated HTML
-    prompt-template-patterns.md     required prompt templates + placeholders
-    output-html-structure.md        final two-pane HTML structure
-    examples.md                     three worked examples
-    sample-core.yaml                sample meaning (a PR)
-    sample-view.yaml                sample strategy (engineer)
-    sample-iframe.html              sample explanation UI
-    sample-prompts.json             sample transform templates
-  README.md
+yaml-to-html-skill/
+  README.md                         this file — repository overview
+  adaptive-understanding-html/      the skill (point Claude / your agent here)
+    SKILL.md                        entry point + step-by-step procedure
+    agents/
+      openai.yaml                   portable agent definition for non-Claude runtimes
+    scripts/
+      build_html.py                 assemble the single HTML (assembler, not renderer)
+      validate_html.py              safety / self-containment linter
+    references/
+      core-yaml-schema.md           meaning structure schema
+      view-yaml-schema.md           presentation strategy schema
+      html-generation-rules.md      safety + UI rules for generated HTML
+      prompt-template-patterns.md   required prompt templates + placeholders
+      output-html-structure.md      final two-pane HTML structure
+      examples.md                   three worked examples
+      sample-core.yaml              sample meaning (a PR)
+      sample-view.yaml              sample strategy (engineer)
+      sample-iframe.html            sample explanation UI
+      sample-prompts.json           sample transform templates
 ```
+
+> **All shell commands below are run from inside the `adaptive-understanding-html/` directory.**
 
 ## scripts/build_html.py
 
