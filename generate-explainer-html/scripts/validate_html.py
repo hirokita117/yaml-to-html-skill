@@ -3,7 +3,7 @@
 
 Scan generated HTML for unsafe / non-self-contained patterns.
 
-The ``adaptive-understanding-html`` skill promises a single offline HTML file whose
+The ``generate-explainer-html`` skill promises a single offline HTML file whose
 iframe never talks to the network or reaches the parent page. This linter enforces that
 promise. It is intentionally conservative: it flags string patterns, so a finding may
 occasionally be a false positive (e.g. the word ``fetch`` in prose) — fix the wording or

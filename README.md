@@ -1,4 +1,4 @@
-# adaptive-understanding-html
+# generate-explainer-html
 
 A Claude skill that turns an **understanding target** — a document, repository summary,
 pull request / diff, README, design note, or specification — into **one self-contained
@@ -72,7 +72,7 @@ scripts only **assemble** and **validate**; they never derive a diagram from `co
 ```
 yaml-to-html-skill/
   README.md                         this file — repository overview
-  adaptive-understanding-html/      the skill (point Claude / your agent here)
+  generate-explainer-html/          the skill (point Claude / your agent here)
     SKILL.md                        entry point + step-by-step procedure
     agents/
       openai.yaml                   portable agent definition for non-Claude runtimes
@@ -92,7 +92,7 @@ yaml-to-html-skill/
       sample-prompts.json           sample transform templates
 ```
 
-> **All shell commands below are run from inside the `adaptive-understanding-html/` directory.**
+> **All shell commands below are run from inside the `generate-explainer-html/` directory.**
 
 ## scripts/build_html.py
 

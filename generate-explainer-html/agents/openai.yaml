@@ -1,8 +1,8 @@
-# Portable agent definition for the adaptive-understanding-html skill.
+# Portable agent definition for the generate-explainer-html skill.
 # This describes the skill for non-Claude (e.g. OpenAI-style) agent runtimes.
 # It mirrors SKILL.md: the same flow, the same scripts, the same safety contract.
 
-name: adaptive-understanding-html
+name: generate-explainer-html
 version: 1
 description: >
   Generate a single self-contained HTML file that helps a user understand a document,

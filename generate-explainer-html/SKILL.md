@@ -1,9 +1,9 @@
 ---
-name: adaptive-understanding-html
+name: generate-explainer-html
 description: generate a single self-contained html file that helps users understand documents, repositories, pull requests, design notes, or specifications through personalized visual explanations. use when the user wants an html output with an iframe-based explanation area and copyable prompt templates for asking another ai to regenerate or transform the explanation into tables, worktrees, cards, faq, comparison views, sequence views, story views, or other user-friendly representations.
 ---
 
-# adaptive-understanding-html
+# generate-explainer-html
 
 Turn an understanding target — a pasted document, repository summary, PR/diff summary,
 README, design note, or spec — into **one self-contained HTML file** that:

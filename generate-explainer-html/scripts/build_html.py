@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """build_html.py
 
-Assemble a single, self-contained HTML file for the ``adaptive-understanding-html`` skill.
+Assemble a single, self-contained HTML file for the ``generate-explainer-html`` skill.
 
 This script is an *assembler*, not a renderer. It does NOT look at the meaning of
 ``core.yaml`` and turn it into a fixed diagram. The understanding UI is authored by an
