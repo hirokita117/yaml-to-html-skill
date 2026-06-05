@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-marketplace.json",
+  "name": "yaml-to-html-skill",
+  "description": "Marketplace hosting the yaml-to-html explainer plugin.",
+  "owner": {
+    "name": "hirokita117",
+    "url": "https://github.com/hirokita117"
+  },
+  "plugins": [
+    {
+      "name": "yaml-to-html",
+      "source": "./",
+      "description": "Generate a single self-contained HTML explainer (sandboxed iframe UI + copyable prompt templates) from a document, repo summary, PR/diff, README, design note, or spec.",
+      "version": "0.1.0",
+      "category": "documentation",
+      "keywords": [
+        "html",
+        "yaml",
+        "documentation",
+        "explainer"
+      ]
+    }
+  ]
+}

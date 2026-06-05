@@ -67,32 +67,51 @@ freely, guided by `view.yaml` and constrained by **HTML generation rules** (see
 `references/html-generation-rules.md`) that keep it safe and self-contained. The Python
 scripts only **assemble** and **validate**; they never derive a diagram from `core.yaml`.
 
+## Install as a Claude Code plugin
+
+This repository is a self-contained Claude Code plugin (named `yaml-to-html`) that
+ships a single skill. Add the repo as a marketplace, then install the plugin:
+
+```
+/plugin marketplace add hirokita117/yaml-to-html-skill
+/plugin install yaml-to-html@yaml-to-html-skill
+```
+
+Once installed, the skill is available to Claude as `generate-explainer-html`
+(namespaced `yaml-to-html:generate-explainer-html`). You can keep using the scripts
+directly from a clone as shown below without installing the plugin.
+
 ## Repository layout
 
 ```
 yaml-to-html-skill/
   README.md                         this file — repository overview
-  generate-explainer-html/          the skill (point Claude / your agent here)
-    SKILL.md                        entry point + step-by-step procedure
-    agents/
-      openai.yaml                   portable agent definition for non-Claude runtimes
-    scripts/
-      build_html.py                 assemble the single HTML (assembler, not renderer)
-      validate_html.py              safety / self-containment linter
-    references/
-      core-yaml-schema.md           meaning structure schema
-      view-yaml-schema.md           presentation strategy schema
-      html-generation-rules.md      safety + UI rules for generated HTML
-      prompt-template-patterns.md   required prompt templates + placeholders
-      output-html-structure.md      final two-pane HTML structure
-      examples.md                   three worked examples
-      sample-core.yaml              sample meaning (a PR)
-      sample-view.yaml              sample strategy (engineer)
-      sample-iframe.html            sample explanation UI
-      sample-prompts.json           sample transform templates
+  LICENSE                           MIT license
+  .claude-plugin/
+    plugin.json                     plugin manifest (name, version, metadata)
+    marketplace.json                marketplace manifest (lets users add+install this repo)
+  skills/
+    generate-explainer-html/        the skill (point Claude / your agent here)
+      SKILL.md                      entry point + step-by-step procedure
+      agents/
+        openai.yaml                 portable agent definition for non-Claude runtimes
+      scripts/
+        build_html.py               assemble the single HTML (assembler, not renderer)
+        validate_html.py            safety / self-containment linter
+      references/
+        core-yaml-schema.md         meaning structure schema
+        view-yaml-schema.md         presentation strategy schema
+        html-generation-rules.md    safety + UI rules for generated HTML
+        prompt-template-patterns.md required prompt templates + placeholders
+        output-html-structure.md    final two-pane HTML structure
+        examples.md                 three worked examples
+        sample-core.yaml            sample meaning (a PR)
+        sample-view.yaml            sample strategy (engineer)
+        sample-iframe.html          sample explanation UI
+        sample-prompts.json         sample transform templates
 ```
 
-> **All shell commands below are run from inside the `generate-explainer-html/` directory.**
+> **All shell commands below are run from inside the `skills/generate-explainer-html/` directory.**
 
 ## scripts/build_html.py
 

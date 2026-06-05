@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "yaml-to-html",
+  "displayName": "YAML to HTML Explainer",
+  "version": "0.1.0",
+  "description": "Turn a document, repository summary, PR/diff, README, design note, or spec into one self-contained, offline HTML file: a tailored explanation UI inside a sandboxed iframe plus copyable prompt templates outside it for regenerating or transforming the explanation with another AI.",
+  "author": {
+    "name": "hirokita117",
+    "url": "https://github.com/hirokita117"
+  },
+  "homepage": "https://github.com/hirokita117/yaml-to-html-skill",
+  "repository": "https://github.com/hirokita117/yaml-to-html-skill",
+  "license": "MIT",
+  "keywords": [
+    "html",
+    "yaml",
+    "documentation",
+    "explainer",
+    "code-understanding",
+    "self-contained",
+    "offline"
+  ]
+}
