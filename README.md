@@ -1,85 +1,74 @@
-# generate-explainer-html
+# yaml-to-html explainer
 
-A Claude skill that turns an **understanding target** — a document, repository summary,
-pull request / diff, README, design note, or specification — into **one self-contained
-HTML file** tailored to how a particular reader understands things.
+A Claude Code plugin with **two skills** that turn an **understanding target** — a
+document, repository summary, pull request / diff, README, design note, or specification —
+into an **offline HTML explainer bundle** tailored to how a particular reader understands
+things.
 
-The HTML has two parts:
+The two skills split the work cleanly:
 
-- **Inside an iframe:** a visual explanation UI for the target (table, worktree, cards,
-  FAQ, comparison, sequence, reading path, risk/impact map, glossary, tutorial, …).
-- **Outside the iframe:** copyable **prompt templates** the user can paste into another
-  AI to regenerate or transform the explanation into a representation that suits them.
+| skill | role | output |
+|---|---|---|
+| **`generate-explainer-yaml`** | YAML 生成・整形 | `core.yaml` (meaning) + `view.yaml` (presentation strategy) |
+| **`generate-explainer-html`** | HTML 設計・生成 | a bundle: a light/dark shell + switchable iframe views |
 
-## Purpose
+```
+Input (doc / repo / PR / README / design note / spec)
+  ↓ generate-explainer-yaml
+core.yaml  (what it MEANS — concepts, relations, importance, difficulty, sources)
+view.yaml  (how to SHOW it to this reader — audience, forms, emphasis)
+  ↓ generate-explainer-html
+HTML bundle: index.html (light/dark shell + view switcher + add-a-view prompts)
+             + views/NN-<id>.html  (one switchable iframe view each)
+```
 
-People understand the same thing differently. One reader wants a table; another wants a
-worktree, a FAQ, a sequence, a story, a reading order, or an impact map. The goal of this
-skill is to make it easy to convert the *same* understanding target into the
-representation that fits *this* reader — and to let the user keep transforming it later on
-their own.
+## What the output looks like
+
+The HTML output is a **bundle (a directory)**, not a single file:
+
+- **A light/dark shell** (`index.html`) with a theme toggle (light by default).
+- **A right pane that switches between iframe views.** Each view is a separate
+  self-contained HTML document under `views/`. Views are **additive** — ask for a "table"
+  view next to your "beginner" view and you get a second tab, not a replacement.
+- **A left pane of copyable prompt templates.** Each asks another *local-file-reading* AI
+  (Claude Code / Cursor / an agentic IDE) to read the YAML **by absolute path** and return
+  **one new view** to add to the bundle. The prompts never embed the YAML content.
 
 ## This is not a web app
 
 - No server, no API route, no build pipeline, no chat UI.
-- No external CDN, CSS, or JS. The output is a single offline HTML file.
-- The iframe never talks to the network and never reaches the parent page.
+- No external CDN, CSS, or JS; no network calls; no storage or cookies.
+- Each view runs in a sandboxed iframe (`sandbox="allow-scripts"`, no `allow-same-origin`)
+  and cannot reach the parent page.
 
-The final output is **one HTML file** you open directly in a browser.
-
-## Inside vs. outside the iframe
-
-- **Inside the iframe** is the *explanation*. It is sandboxed (`sandbox="allow-scripts"`,
-  no `allow-same-origin`), so it cannot touch the parent DOM, storage, or cookies, and it
-  cannot make network requests. The representation is chosen per reader — it is not a
-  fixed template.
-- **Outside the iframe** is *not a chat UI*. It is a set of copyable prompt templates.
-  Each is a card with a title, a usage note, the prompt body, and a copy button. The user
-  copies one into any AI to get a new representation back.
-
-### Why prompt templates instead of a chat UI
-
-A chat UI would mean network calls, API keys, and state — none of which belong in an
-offline, self-contained file. Prompt templates keep the artifact safe and portable while
-still letting the user iterate: they choose their own AI, on their own terms, and paste a
-ready-made request.
+The shell loads each view via a **local relative `src`** (e.g. `views/01-engineer.html`) —
+a local file read, not a network read. (A remote `src` stays forbidden.)
 
 ## core.yaml vs. view.yaml
 
-Two intermediate representations sit between the input and the HTML:
+Two intermediate representations sit between the input and the HTML, produced by
+`generate-explainer-yaml`:
 
 | | `core.yaml` | `view.yaml` |
 |---|---|---|
 | answers | what the target **means** | how to **show** it to this reader |
 | depends on the reader? | no | yes |
 | contents | concepts, relations, importance, difficulty, confidence, questions, risks, source refs | audience, preferred/avoided forms, density, tone, emphasis, generation policy |
-| schema | `references/core-yaml-schema.md` | `references/view-yaml-schema.md` |
+| schema | `generate-explainer-yaml/references/core-yaml-schema.md` | `generate-explainer-yaml/references/view-yaml-schema.md` |
 
-Keeping meaning separate from presentation is what lets the user re-target the same
-content at a new audience just by changing `view.yaml` — exactly what the "regenerate" and
-"iframe-only" prompt templates do.
-
-### Why HTML generation rules instead of a fixed renderer
-
-A fixed renderer would collapse every target into a handful of templates and lose the
-whole point — adapting to how a person understands. Instead, an AI generates the iframe UI
-freely, guided by `view.yaml` and constrained by **HTML generation rules** (see
-`references/html-generation-rules.md`) that keep it safe and self-contained. The Python
-scripts only **assemble** and **validate**; they never derive a diagram from `core.yaml`.
+Keeping meaning separate from presentation is what lets the same `core.yaml` become many
+switchable views — each a different *form* of the same meaning.
 
 ## Install as a Claude Code plugin
-
-This repository is a self-contained Claude Code plugin (named `yaml-to-html`) that
-ships a single skill. Add the repo as a marketplace, then install the plugin:
 
 ```
 /plugin marketplace add hirokita117/yaml-to-html-skill
 /plugin install yaml-to-html@yaml-to-html-skill
 ```
 
-Once installed, the skill is available to Claude as `generate-explainer-html`
-(namespaced `yaml-to-html:generate-explainer-html`). You can keep using the scripts
-directly from a clone as shown below without installing the plugin.
+Once installed, both skills are available to Claude as `generate-explainer-yaml` and
+`generate-explainer-html` (namespaced `yaml-to-html:generate-explainer-html`, etc.). You can
+also use the scripts directly from a clone without installing the plugin.
 
 ## Repository layout
 
@@ -91,99 +80,114 @@ yaml-to-html-skill/
     plugin.json                     plugin manifest (name, version, metadata)
     marketplace.json                marketplace manifest (lets users add+install this repo)
   skills/
-    generate-explainer-html/        the skill (point Claude / your agent here)
-      SKILL.md                      entry point + step-by-step procedure
-      agents/
-        openai.yaml                 portable agent definition for non-Claude runtimes
-      scripts/
-        build_html.py               assemble the single HTML (assembler, not renderer)
-        validate_html.py            safety / self-containment linter
+    generate-explainer-yaml/        Skill A — YAML 生成・整形
+      SKILL.md                      entry point + procedure
+      agents/openai.yaml            portable agent definition
       references/
-        core-yaml-schema.md         meaning structure schema
-        view-yaml-schema.md         presentation strategy schema
-        html-generation-rules.md    safety + UI rules for generated HTML
-        prompt-template-patterns.md required prompt templates + placeholders
-        output-html-structure.md    final two-pane HTML structure
-        examples.md                 three worked examples
+        core-yaml-schema.md         meaning structure schema (core/v1)
+        view-yaml-schema.md         presentation strategy schema (view/v1)
         sample-core.yaml            sample meaning (a PR)
         sample-view.yaml            sample strategy (engineer)
-        sample-iframe.html          sample explanation UI
-        sample-prompts.json         sample transform templates
+        examples.md                 three worked intents
+    generate-explainer-html/        Skill B — HTML 設計・生成
+      SKILL.md                      entry point + procedure
+      agents/openai.yaml            portable agent definition
+      scripts/
+        build_html.py               build/grow the bundle (assembler, not renderer)
+        validate_html.py            safety / self-containment linter
+      references/
+        html-generation-rules.md    safety + UI rules for view documents
+        output-bundle-structure.md  the bundle's structure and shell
+        prompt-template-patterns.md add-a-view prompt templates + path placeholders
+        sample-iframe.html          sample iframe view (engineer)
+        sample-prompts.json         sample add-a-view templates
+        examples.md                 three worked bundles
 ```
-
-> **All shell commands below are run from inside the `skills/generate-explainer-html/` directory.**
 
 ## scripts/build_html.py
 
-Assembles the outer two-pane shell, embeds the iframe document as a sandboxed `srcdoc`,
-renders the prompt templates as copyable cards, and embeds `core.yaml` / `view.yaml` as
-viewable metadata. It substitutes `{{core_yaml}}` and `{{view_yaml}}` placeholders in
-prompt bodies; any other `{{...}}` token (e.g. `{{希望する表現}}`) is left for the user.
+Builds and **grows** a bundle: writes the shell (`index.html`), merges views into
+`views.json`, copies `core.yaml` / `view.yaml` in, and renders the prompt cards. It
+substitutes `{{core_yaml_path}}` / `{{view_yaml_path}}` (the **absolute paths** of the
+copied-in YAML) into prompt bodies; any other `{{...}}` token (e.g. `{{希望する表現}}`) is
+left for the user.
 
 ```bash
+# from skills/generate-explainer-html/
 python scripts/build_html.py \
-  --core core.yaml \
-  --view view.yaml \
-  --iframe iframe.html \
-  --prompts prompts.json \
-  --output output.html
+  --bundle ./explainer-bundle \
+  --core /abs/path/core.yaml \
+  --view /abs/path/view.yaml \
+  --prompts references/sample-prompts.json \
+  --view-html "エンジニア=references/sample-iframe.html"
 ```
 
-`--iframe`, `--prompts`, `--output` are required; `--core` and `--view` are optional.
-(Use `python3` if `python` is not on your PATH. Standard library only — no install.)
+`--bundle` and `--prompts` are required; `--core` / `--view` are optional (recommended);
+`--view-html "LABEL=PATH"` is repeatable. Re-running with a new `--view-html` **appends** a
+view; re-running an existing label **updates it in place**. (Use `python3` if `python` is
+not on your PATH. Standard library only — no install.)
 
 ## scripts/validate_html.py
 
-Scans a generated HTML file for unsafe or non-self-contained patterns and exits non-zero
-if any are found, printing the offending lines.
+Scans the bundle for unsafe or non-self-contained patterns and exits non-zero if any are
+found, printing the offending lines. Pass `index.html` and every view file:
 
 ```bash
-python scripts/validate_html.py output.html
+python scripts/validate_html.py ./explainer-bundle/index.html ./explainer-bundle/views/*.html
 ```
 
-Detected (each is an error): external `<script src>`, external-loading `<iframe>`,
-`<object>`, `<embed>`, external `<link rel="stylesheet">`, `fetch(`, `XMLHttpRequest`,
-`WebSocket`, `localStorage`, `sessionStorage`, `document.cookie`, `window.parent`,
-`window.top`, `target="_top"`, and any `http://` / `https://` URL. A **required**
-sandboxed iframe is not flagged; an iframe that loads an external document is. Pass
-`--strict` to also fail on warnings.
+Detected (each is an error): external `<script src>`, remote-loading `<iframe>` (scheme
+`://` or `//`), `<object>`, `<embed>`, external `<link rel="stylesheet">`, `fetch(`,
+`XMLHttpRequest`, `WebSocket`, `localStorage`, `sessionStorage`, `document.cookie`,
+`window.parent`, `window.top`, `target="_top"`, and any `http://` / `https://` URL. A
+**local relative** iframe `src` (into `views/`) is allowed. Pass `--strict` to also fail on
+warnings.
 
-## Safety policy of the generated HTML
+## Opening the bundle (browser note)
 
-- Single, offline, self-contained file — no external dependency of any kind.
-- The iframe is sandboxed and cannot reach the parent page or the network.
+Because each view loads via an `iframe src`, **Chrome/Edge block `file://` iframe loads**
+("Not allowed to load local resource"). Open the bundle either:
+
+- in **Firefox** over `file://`, or
+- by serving the folder with a trivial static server, e.g. `python3 -m http.server` run
+  **inside the bundle dir** — that reads only local files; the no-network rule constrains
+  the *content*, not how you serve the folder.
+
+## Safety policy of the generated bundle
+
+- Offline, self-contained bundle — no external dependency of any kind.
+- Each view is sandboxed and cannot reach the parent page or the network.
 - No storage, no cookies, no secrets, no large verbatim source dumps.
 - Verified by `validate_html.py` before delivery.
 
 ## Try the sample
 
 ```bash
+# from skills/generate-explainer-html/
 python scripts/build_html.py \
-  --core references/sample-core.yaml \
-  --view references/sample-view.yaml \
-  --iframe references/sample-iframe.html \
+  --bundle ./sample-bundle \
+  --core ../generate-explainer-yaml/references/sample-core.yaml \
+  --view ../generate-explainer-yaml/references/sample-view.yaml \
   --prompts references/sample-prompts.json \
-  --output sample-output.html
+  --view-html "エンジニア=references/sample-iframe.html"
 
-python scripts/validate_html.py sample-output.html
+python scripts/validate_html.py ./sample-bundle/index.html ./sample-bundle/views/*.html
 ```
 
-Open `sample-output.html` in a browser. Right pane: an engineer-oriented PR explanation
-(worktree + reading order + review checklist). Left pane: copyable transform templates.
+Open `sample-bundle/index.html` (Firefox / served). Right pane: an engineer-oriented PR
+explanation (worktree + reading order + review checklist), with a light/dark toggle and a
+view switcher. Left pane: copyable "add a view" templates and the YAML viewers.
 
 ## Usage examples
 
-See `references/examples.md` for three worked examples:
-
-1. Understand a PR as an engineer (worktree + reading order + review checklist).
-2. Understand a spec as a PdM (purpose / impact / decision points / risks).
-3. Understand a technical doc as a beginner (3 steps + glossary + FAQ).
+- `skills/generate-explainer-yaml/references/examples.md` — three worked YAML intents.
+- `skills/generate-explainer-html/references/examples.md` — three worked bundles, including
+  how to **add** a second view next to the first.
 
 ## Future extensions
 
 - More built-in `view.yaml` presets (designer, SRE, security reviewer, exec summary).
-- A small library of reusable iframe layout snippets per form, still AI-composed.
-- Optional `--theme` flag for the shell (light / dark / high-contrast).
+- A small library of reusable iframe view snippets per form, still AI-composed.
 - A diff mode that highlights what changed between two `core.yaml` versions.
-- Export of `core.yaml` / `view.yaml` back out of a generated HTML for round-tripping.
+- Export of `core.yaml` / `view.yaml` back out of a bundle for round-tripping.
 - An optional offline JSON-schema validation step for `core.yaml` / `view.yaml`.

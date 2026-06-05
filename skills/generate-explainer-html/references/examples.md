@@ -1,135 +1,86 @@
-# Examples
+# Examples — building and growing a view bundle
 
-Three worked examples of using the skill. Each shows the input, the `core.yaml` /
-`view.yaml` intent, what goes **inside** the iframe, and what goes **outside** it.
+Three worked examples of this skill. Each starts from a `core.yaml` / `view.yaml` pair
+(produced by the `generate-explainer-yaml` skill) and shows what goes **inside a view**, how
+to **build the bundle**, and how to **add another switchable view** later.
 
-The bundled sample data (`sample-core.yaml`, `sample-view.yaml`, `sample-iframe.html`,
-`sample-prompts.json`) implements **Example 1**.
+The bundled sample (`sample-iframe.html`, `sample-prompts.json`) plus the sibling skill's
+`sample-core.yaml` / `sample-view.yaml` implement **Example 1**.
 
 ---
 
-## Example 1 — Understand a PR as an engineer
+## Example 1 — A PR for an engineer, then add a table view
 
-**Input**
-- PR summary ("Add rate limiting to the public API")
-- changed files (`rate_limit.py`, `token_bucket.py`, `rate_limits.yaml`, tests)
-- diff summary
+**YAML in:** engineer strategy (`worktree` + `reading_path` + `review_checklist`),
+emphasize dependencies / reading order / risks.
 
-**core.yaml (intent)**
-- concepts: `RateLimitMiddleware` (high), `TokenBucketStore` (high, difficult),
-  per-route config (medium), tests (medium)
-- relations: middleware `depends_on` store and config; tests `explains` middleware
-- risks: per-process limits (high), unbounded bucket growth (medium)
-- questions: multi-instance behavior, client-key spoofing
-
-**view.yaml (strategy)**
-- role `engineer`, familiarity `intermediate`
-- preferred forms: `worktree`, `reading_path`, `review_checklist`
-- dislikes: `dense_table`
-- emphasize: dependencies, reading order, impact, risks
-
-**Inside the iframe**
-- worktree of the changed files with a reading-order number on each
-- high-impact files flagged
+**Inside the first view (`views/01-engineer.html`)**
+- worktree of the changed files with a reading-order number on each, high-impact flagged
 - concept cards with importance / difficulty / confidence badges
-- relations between concepts
-- "what to read next" path
-- a review checklist
+- relations, a "what to read next" path, a review checklist
 - risks and "next questions to ask an AI"
+- light by default; reads `#theme` for dark
 
-**Outside the iframe (prompt templates)**
-- engineer-focused transform
-- table transform
-- "add more review angles" (free-form)
-- regenerate-full / iframe-only
+**Build the bundle**
+```bash
+python scripts/build_html.py \
+  --bundle ./explainer-bundle \
+  --core /abs/core.yaml --view /abs/view.yaml \
+  --prompts references/sample-prompts.json \
+  --view-html "エンジニア=views-src/engineer.html"
+python scripts/validate_html.py ./explainer-bundle/index.html ./explainer-bundle/views/*.html
+```
 
-> Reproduce it:
-> ```bash
-> python scripts/build_html.py \
->   --core references/sample-core.yaml \
->   --view references/sample-view.yaml \
->   --iframe references/sample-iframe.html \
->   --prompts references/sample-prompts.json \
->   --output sample-output.html
-> python scripts/validate_html.py sample-output.html
-> ```
+**Add a table view later (additive — the engineer view stays)**
+```bash
+python scripts/build_html.py --bundle ./explainer-bundle \
+  --prompts references/sample-prompts.json \
+  --view-html "テーブル=views-src/table.html"
+```
+Now the right pane has two tabs — エンジニア / テーブル — switchable.
 
 ---
 
-## Example 2 — Understand a spec as a PdM
+## Example 2 — A spec for a PdM, then add an FAQ view
 
-**Input**
-- the specification document body
+**YAML in:** product/business strategy (`impact_map` + `decision_map` + `faq`), emphasize
+purpose / impact / decisions / risks; de-emphasize implementation detail.
 
-**core.yaml (intent)**
-- concepts framed as decisions, requirements, and impacts rather than modules
-- importance keyed to business impact; risks captured explicitly
-- source_refs point at sections of the spec
-
-**view.yaml (strategy)**
-- role `product_manager` / `business`, familiarity `intermediate`
-- preferred forms: `impact_map`, `decision_map`, `faq`
-- avoid forms: `dense_table`
-- emphasize: purpose, impact, decision points, risks
-- de-emphasize: implementation detail
-
-**Inside the iframe**
+**Inside the first view**
 - purpose / impact / decision points / risks, grouped visually
-- "what changes and why it matters"
-- user impact and business impact
-- decision points and things to confirm
-- next questions to ask an AI
+- "what changes and why it matters", user impact and business impact
+- decision points and things to confirm, next questions
 
-**Outside the iframe (prompt templates)**
-- PdM / Biz transform
-- "turn this into an FAQ" transform
-- "center it on impact / affected areas" (free-form)
-- regenerate-full / iframe-only
+**Then add** a `faq` view (`--view-html "FAQ=views-src/faq.html"`) next to the PdM view —
+copy the **free-form** prompt card, tell a local-file-reading AI "FAQ 形式で", save the
+returned document, and re-run the build.
 
 ---
 
-## Example 3 — Understand a technical doc as a beginner
+## Example 3 — A doc for a beginner, then add a glossary view
 
-**Input**
-- a technical document
+**YAML in:** beginner strategy (`beginner_tutorial` + `glossary` + `faq`), tone `tutorial`,
+density `low`, emphasize why-it-matters and a step-by-step path.
 
-**core.yaml (intent)**
-- concepts tagged with difficulty so hard terms are visible
-- a glossary's worth of term definitions captured as concept details
-- low-confidence items surfaced as questions
+**Inside the first view**
+- a 3-step path to understanding, an analogy for the hardest concept
+- a glossary of terms with short plain explanations, a FAQ, next questions
 
-**view.yaml (strategy)**
-- role `beginner`, familiarity `beginner`
-- preferred forms: `beginner_tutorial`, `glossary`, `faq`
-- tone `tutorial`, density `low`, interaction_level `medium`
-- emphasize: why it matters, step-by-step path
-
-**Inside the iframe**
-- a 3-step path to understanding
-- a glossary of terms with short, plain explanations
-- a FAQ
-- an analogy for the hardest concept
-- next questions to ask an AI
-
-**Outside the iframe (prompt templates)**
-- "make it even simpler" transform
-- "add an analogy" (free-form)
-- table transform
-- regenerate-full / iframe-only
+**Then add** a dedicated `glossary` view next to the tutorial view via the free-form card.
 
 ---
 
 ## Pattern across all three
 
-Same machinery, different `view.yaml`:
+Same machinery, different `view.yaml` and different *views in the same bundle*:
 
 | | Example 1 | Example 2 | Example 3 |
 |---|---|---|---|
 | reader | engineer | PdM / Biz | beginner |
-| inside iframe | worktree + reading order + review checklist | purpose / impact / decisions / risks | 3 steps + glossary + FAQ |
-| emphasize | dependencies, risks | impact, decisions | why-it-matters, steps |
-| outside iframe | engineer + table + review-angles | biz + faq + impact | simpler + analogy + table |
+| first view | worktree + reading order + review checklist | purpose / impact / decisions / risks | 3 steps + glossary + FAQ |
+| added view | table | faq | glossary |
 
-The `core.yaml` (meaning) can stay largely the same; swapping `view.yaml` (strategy) is
-what re-targets the explanation — which is exactly what the prompt templates let the user
-do later, on their own, with another AI.
+The `core.yaml` (meaning) stays the same across views; each view is a different *form* of
+it. New forms are **added** as switchable tabs — the reader keeps the old view and gains the
+new one, instead of overwriting. That is exactly what the left-pane "add a view" prompt
+templates let the user do later, on their own, with another local-file-reading AI.

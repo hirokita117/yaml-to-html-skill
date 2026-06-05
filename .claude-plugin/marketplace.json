@@ -10,8 +10,8 @@
     {
       "name": "yaml-to-html",
       "source": "./",
-      "description": "Generate a single self-contained HTML explainer (sandboxed iframe UI + copyable prompt templates) from a document, repo summary, PR/diff, README, design note, or spec.",
-      "version": "0.1.0",
+      "description": "Two skills: generate-explainer-yaml captures meaning (core.yaml) + strategy (view.yaml) from a document/repo/PR/spec; generate-explainer-html builds an offline light/dark bundle with switchable, additive iframe views and copyable add-a-view prompts.",
+      "version": "0.2.0",
       "category": "documentation",
       "keywords": [
         "html",

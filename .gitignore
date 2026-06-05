@@ -1,6 +1,10 @@
 # Generated artifacts (regenerate with scripts/build_html.py)
 sample-output.html
 *output.html
+# Generated explainer bundles
+sample-bundle/
+explainer-bundle/
+*-bundle/
 
 # Python
 __pycache__/

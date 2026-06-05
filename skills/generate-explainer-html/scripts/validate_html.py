@@ -11,9 +11,10 @@ the markup so the output stays unambiguously safe.
 
 Important nuance
 ----------------
-An ``<iframe>`` is REQUIRED by this skill, so the bare tag is never flagged. What is
-flagged is an iframe that loads an *external* document via ``src`` (a real network read).
-Sandboxed ``srcdoc`` iframes are fine.
+An ``<iframe>`` is REQUIRED by this skill, so the bare tag is never flagged. The bundle's
+shell loads each view via a LOCAL relative ``src`` (e.g. ``src="views/01-x.html"``), which
+is allowed. What is flagged is an iframe that loads a *remote* document via ``src`` with a
+URL scheme or ``//`` prefix (a real network read).
 
 Exit code
 ---------
@@ -38,10 +39,7 @@ CHECKS = [
      "external/remote script include is forbidden; inline <script> only"),
     ("external <iframe src>", "error",
      re.compile(r"<iframe\b[^>]*\bsrc\s*=\s*[\"']?\s*(?:[a-z][a-z0-9+.-]*:)?//", re.I),
-     "iframe must not load an external document; use sandboxed srcdoc"),
-    ("<iframe src> (non-srcdoc)", "warn",
-     re.compile(r"<iframe\b[^>]*\bsrc\s*=", re.I),
-     "iframe uses src; prefer srcdoc so the file stays self-contained"),
+     "iframe must not load a remote document; a local relative src (views/...) is allowed"),
     ("<object>", "error", re.compile(r"<object\b", re.I),
      "<object> can embed external/plugin content"),
     ("<embed>", "error", re.compile(r"<embed\b", re.I),
