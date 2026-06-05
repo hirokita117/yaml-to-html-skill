@@ -1,65 +1,44 @@
 [
   {
-    "id": "regenerate-full",
-    "title": "HTML全体を再生成する",
-    "description": "今のHTML全体を、希望する表現で作り直したいときに使う。",
-    "tags": ["full", "regenerate"],
-    "prompt": "あなたは理解支援HTMLを作るアシスタントです。\n下の core.yaml（意味構造）と view.yaml（見せ方の方針）をもとに、単一の自己完結HTMLを作り直してください。\n\n# 希望\n- {{希望する表現}}\n\n# 出力ルール\n- 出力は単一HTMLファイル1つだけ。\n- 画面は左右2ペイン。左にプロンプトテンプレート集、右にiframeの図解。\n- iframe内に、今回の理解対象に合わせた図解UIを置く。\n- iframe外には、このような変換用プロンプトテンプレートを残す（チャットUIは作らない）。\n- 各テンプレートにコピーボタンを付ける。\n- 制約: 外部CDN・外部CSS・外部スクリプト・外部読み込みのiframeを使わない。ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスを行わない。iframeはsandbox=allow-scriptsのみ。\n\n# core.yaml\n{{core_yaml}}\n\n# view.yaml\n{{view_yaml}}"
+    "id": "view-table",
+    "title": "テーブルのビューを追加",
+    "description": "概念・重要度・難易度・関係・根拠を一覧で見たい人向けのビューを追加する。",
+    "tags": ["view", "table"],
+    "prompt": "あなたは理解支援のための iframe ビューを作るアシスタントです。\n下記の yml をまず読み込んでから、テーブル中心の新しい iframe ビュー（単一HTML document）を1つ作ってください。\n\n# 参照（必ず読み込む）\n- core.yaml: {{core_yaml_path}}\n- view.yaml: {{view_yaml_path}}\nこれらのファイルを開いて意味構造と見せ方の方針を把握してから作ってください。yml の中身はこのプロンプトには貼り付けていません。\n\n# このビューの表現\n- テーブル中心。列の例: 概念 / 重要度 / 難易度 / confidence / 関係(depends_on など) / 根拠(ファイル:行) / 次に読むべきか\n- 並べ替え・絞り込みを付けてよい（すべて iframe 内で完結）。\n- テーブルの後に「次に読むべき箇所」と「次にAIへ聞くとよい質問」も付ける。\n\n# 出力ルール\n- 出力は <!DOCTYPE html> から始まる単一の完結した HTML document 1つだけ（iframe に入れる本体）。\n- inline CSS / inline JS のみ。外部CDN・外部CSS・外部スクリプト・外部読み込みのiframeは使わない。ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスは行わない。\n- デフォルトはライトテーマ。URLハッシュ #theme=dark を読み取ってダークにも対応する（自分の location.hash を見て、hashchange も listen して data-theme を切り替える）。\n- 必ず含める: 重要概念 / 関係性 / 次に読むべき箇所 / 出典(source references) / 次にAIへ聞くとよい質問。\n- このビューは既存のビュー一式に「追加」されます。index.html やプロンプト、既存ビューは変更しないでください。返すのは新しいビューの HTML document だけです。\n- 保存先の例: バンドルの views/ に新しいファイルとして置き、build_html.py を --view-html \"テーブル=その.html\" で再実行すると新しいタブとして増えます。"
   },
   {
-    "id": "iframe-only",
-    "title": "iframe内の図解だけ作り直す",
-    "description": "外側のHTML構造は維持し、iframe内の図解部分だけ別表現にしたいときに使う。",
-    "tags": ["iframe-only"],
-    "prompt": "外側のHTML構造は変えず、iframe内に入れるHTML documentだけを作り直してください。\n\n# 希望する表現\n- {{希望する表現}}\n\n# 出力ルール\n- 出力はiframe内に入れる単一のHTML documentのみ（<!DOCTYPE html> から始まる完結した文書）。\n- inline CSS / inline JS は可。\n- 外部読み込み・ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスは禁止。\n- 必ず含める: 重要概念 / 関係性 / 次に読むべき箇所 / 出典(source references) / 次にAIへ聞くとよい質問。\n- 単なる文章の羅列にせず、視覚的な構造を持たせる。\n\n# core.yaml\n{{core_yaml}}\n\n# 現在の view.yaml\n{{view_yaml}}"
+    "id": "view-worktree",
+    "title": "ワークツリーのビューを追加",
+    "description": "リポジトリ構造・階層で理解したい人向けのビューを追加する。",
+    "tags": ["view", "worktree", "tree"],
+    "prompt": "あなたは理解支援のための iframe ビューを作るアシスタントです。\n下記の yml をまず読み込んでから、ワークツリー（階層ツリー）中心の新しい iframe ビュー（単一HTML document）を1つ作ってください。\n\n# 参照（必ず読み込む）\n- core.yaml: {{core_yaml_path}}\n- view.yaml: {{view_yaml_path}}\nこれらのファイルを開いて把握してから作ってください。yml の中身はこのプロンプトには貼り付けていません。\n\n# このビューの表現\n- directory / file / concept の階層ツリー\n- どこから読むべきか（読む順番の番号）\n- 変更影響が強い箇所のマーク\n- expandable（開閉できる）セクション\n\n# 出力ルール\n- 出力は <!DOCTYPE html> から始まる単一の完結した HTML document 1つだけ（iframe に入れる本体）。\n- inline CSS / inline JS のみ。外部CDN・外部CSS・外部スクリプト・外部読み込みのiframeは使わない。ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスは行わない。\n- デフォルトはライトテーマ。URLハッシュ #theme=dark を読み取ってダークにも対応する（自分の location.hash を見て、hashchange も listen して data-theme を切り替える）。\n- 必ず含める: 重要概念 / 関係性 / 次に読むべき箇所 / 出典(source references) / 次にAIへ聞くとよい質問。\n- このビューは既存のビュー一式に「追加」されます。index.html やプロンプト、既存ビューは変更しないでください。返すのは新しいビューの HTML document だけです。"
   },
   {
-    "id": "iframe-only-table",
-    "title": "iframe内をテーブル表現にする",
-    "description": "iframe内の理解UIだけをテーブル表現に変えたいときに使う。",
-    "tags": ["iframe-only", "table"],
-    "prompt": "iframe内に入れるHTML documentだけを、テーブル中心の表現で作り直してください。\n\n# テーブルに含める列\n- 概念 / 重要度 / 難易度 / confidence / 関係(depends_on など) / 根拠(ファイル:行) / 次に読むべきか\n\n# 出力ルール\n- 出力はiframe内に入れる単一のHTML documentのみ。\n- inline CSS / inline JS は可。並べ替えや絞り込みを付けてもよい。\n- 外部読み込み・ネットワーク通信・ストレージ・cookie・親フレームアクセスは禁止。\n- テーブルの後に「次に読むべき箇所」と「次にAIへ聞くとよい質問」も付ける。\n\n# core.yaml\n{{core_yaml}}"
+    "id": "view-beginner",
+    "title": "初心者向けのビューを追加",
+    "description": "前提知識が少ない人向け。用語解説と段階的な導線のビューを追加する。",
+    "tags": ["view", "beginner"],
+    "prompt": "あなたは理解支援のための iframe ビューを作るアシスタントです。\n下記の yml をまず読み込んでから、前提知識が少ない人にも分かる新しい iframe ビュー（単一HTML document）を1つ作ってください。\n\n# 参照（必ず読み込む）\n- core.yaml: {{core_yaml_path}}\n- view.yaml: {{view_yaml_path}}\nこれらのファイルを開いて把握してから作ってください。yml の中身はこのプロンプトには貼り付けていません。\n\n# このビューの表現\n- 専門用語の説明 / なぜ重要か / 3ステップで理解する導線 / 例え話 / 質問例\n- 難しい言葉には短い補足を添える\n\n# 出力ルール\n- 出力は <!DOCTYPE html> から始まる単一の完結した HTML document 1つだけ（iframe に入れる本体）。\n- inline CSS / inline JS のみ。外部CDN・外部CSS・外部スクリプト・外部読み込みのiframeは使わない。ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスは行わない。\n- デフォルトはライトテーマ。URLハッシュ #theme=dark を読み取ってダークにも対応する（自分の location.hash を見て、hashchange も listen して data-theme を切り替える）。\n- 必ず含める: 重要概念 / 関係性 / 次に読むべき箇所 / 出典(source references) / 次にAIへ聞くとよい質問。\n- このビューは既存のビュー一式に「追加」されます。index.html やプロンプト、既存ビューは変更しないでください。返すのは新しいビューの HTML document だけです。"
   },
   {
-    "id": "as-table",
-    "title": "テーブル表現で理解する",
-    "description": "概念・重要度・難易度・関係・根拠を一覧で見たい人向け。",
-    "tags": ["table"],
-    "prompt": "次の理解対象を、テーブルで理解しやすい形に整理してください。\n\n# 含める要件\n- 概念一覧 / 重要度 / 難易度 / 関係性 / 根拠(出典) / 次に読むべき箇所\n\n# 出力\n- 単一の自己完結HTML。右ペインiframe内にテーブル中心の図解、左ペインに変換用テンプレートを残す。\n- 外部依存なし。iframeはsandbox=allow-scriptsのみ。ネットワーク通信・ストレージ・cookie・親フレームアクセスは禁止。\n\n# core.yaml\n{{core_yaml}}"
+    "id": "view-engineer",
+    "title": "エンジニア向けのビューを追加",
+    "description": "実装者・レビューア向け。依存・読む順番・リスク・テスト観点のビューを追加する。",
+    "tags": ["view", "engineer", "review"],
+    "prompt": "あなたは理解支援のための iframe ビューを作るアシスタントです。\n下記の yml をまず読み込んでから、実装者・レビューア向けの新しい iframe ビュー（単一HTML document）を1つ作ってください。\n\n# 参照（必ず読み込む）\n- core.yaml: {{core_yaml_path}}\n- view.yaml: {{view_yaml_path}}\nこれらのファイルを開いて把握してから作ってください。yml の中身はこのプロンプトには貼り付けていません。\n\n# このビューの表現\n- 依存関係 / 変更ファイル / 読む順番 / レビュー観点 / リスク / テスト観点\n- ワークツリー＋読む順番＋レビューチェックリスト等を組み合わせてよい\n\n# 出力ルール\n- 出力は <!DOCTYPE html> から始まる単一の完結した HTML document 1つだけ（iframe に入れる本体）。\n- inline CSS / inline JS のみ。外部CDN・外部CSS・外部スクリプト・外部読み込みのiframeは使わない。ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスは行わない。\n- デフォルトはライトテーマ。URLハッシュ #theme=dark を読み取ってダークにも対応する（自分の location.hash を見て、hashchange も listen して data-theme を切り替える）。\n- 必ず含める: 重要概念 / 関係性 / 次に読むべき箇所 / 出典(source references) / 次にAIへ聞くとよい質問。\n- このビューは既存のビュー一式に「追加」されます。index.html やプロンプト、既存ビューは変更しないでください。返すのは新しいビューの HTML document だけです。"
   },
   {
-    "id": "as-worktree",
-    "title": "ワークツリー表現で理解する",
-    "description": "リポジトリ構造・階層で理解したい人向け。",
-    "tags": ["worktree", "tree"],
-    "prompt": "次の理解対象を、ワークツリー（階層ツリー）表現で理解しやすくしてください。\n\n# 含める要件\n- directory / file / concept の階層ツリー\n- どこから読むべきか（読む順番の番号）\n- 変更影響が強い箇所のマーク\n- expandable（開閉できる）セクション\n\n# 出力\n- 単一の自己完結HTML。iframe内にツリー図解、iframe外に変換用テンプレートを残す。\n- 外部依存なし。ネットワーク通信・ストレージ・cookie・親フレームアクセスは禁止。iframeはsandbox=allow-scriptsのみ。\n\n# core.yaml\n{{core_yaml}}"
+    "id": "view-pdm-biz",
+    "title": "PdM / Biz向けのビューを追加",
+    "description": "技術詳細より、目的・影響・判断材料を中心にしたビューを追加する。",
+    "tags": ["view", "pdm", "biz"],
+    "prompt": "あなたは理解支援のための iframe ビューを作るアシスタントです。\n下記の yml をまず読み込んでから、PdM / Biz 向けの新しい iframe ビュー（単一HTML document）を1つ作ってください。技術詳細より意思決定材料を中心にします。\n\n# 参照（必ず読み込む）\n- core.yaml: {{core_yaml_path}}\n- view.yaml: {{view_yaml_path}}\nこれらのファイルを開いて把握してから作ってください。yml の中身はこのプロンプトには貼り付けていません。\n\n# このビューの表現\n- 何が変わるか / なぜ重要か / ユーザー影響 / 業務影響 / 意思決定ポイント / リスクと確認事項\n- purpose / impact / decision points / risks を視覚的にグループ化\n\n# 出力ルール\n- 出力は <!DOCTYPE html> から始まる単一の完結した HTML document 1つだけ（iframe に入れる本体）。\n- inline CSS / inline JS のみ。外部CDN・外部CSS・外部スクリプト・外部読み込みのiframeは使わない。ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスは行わない。\n- デフォルトはライトテーマ。URLハッシュ #theme=dark を読み取ってダークにも対応する（自分の location.hash を見て、hashchange も listen して data-theme を切り替える）。\n- 必ず含める: 重要概念 / 関係性 / 次に読むべき箇所 / 出典(source references) / 次にAIへ聞くとよい質問。\n- このビューは既存のビュー一式に「追加」されます。index.html やプロンプト、既存ビューは変更しないでください。返すのは新しいビューの HTML document だけです。"
   },
   {
-    "id": "for-beginner",
-    "title": "初心者向けにする",
-    "description": "前提知識が少ない人向け。用語解説と段階的な導線。",
-    "tags": ["beginner"],
-    "prompt": "次の理解対象を、前提知識が少ない人にも分かるように作り直してください。\n\n# 含める要件\n- 専門用語の説明 / なぜ重要か / 3ステップで理解する導線 / 例え話 / 質問例\n- 難しい言葉には短い補足を添える\n\n# 出力\n- 単一の自己完結HTML。iframe内に初心者向け図解、iframe外に変換用テンプレートを残す。\n- 外部依存なし。ネットワーク通信・ストレージ・cookie・親フレームアクセスは禁止。\n\n# core.yaml\n{{core_yaml}}"
-  },
-  {
-    "id": "for-engineer",
-    "title": "エンジニア向けにする",
-    "description": "実装者・レビューア向け。依存・読む順番・リスク・テスト観点。",
-    "tags": ["engineer", "review"],
-    "prompt": "次の理解対象を、実装者・レビューア向けに作り直してください。\n\n# 含める要件\n- 依存関係 / 変更ファイル / 読む順番 / レビュー観点 / リスク / テスト観点\n\n# 出力\n- 単一の自己完結HTML。iframe内にエンジニア向け図解（ワークツリー＋読む順番＋レビューチェックリスト等）、iframe外に変換用テンプレートを残す。\n- 外部依存なし。ネットワーク通信・ストレージ・cookie・親フレームアクセスは禁止。iframeはsandbox=allow-scriptsのみ。\n\n# core.yaml\n{{core_yaml}}"
-  },
-  {
-    "id": "for-pdm-biz",
-    "title": "PdM / Biz向けにする",
-    "description": "技術詳細より、目的・影響・判断材料を知りたい人向け。",
-    "tags": ["pdm", "biz"],
-    "prompt": "次の理解対象を、PdM / Biz の人向けに作り直してください。技術詳細より意思決定材料を中心にします。\n\n# 含める要件\n- 何が変わるか / なぜ重要か / ユーザー影響 / 業務影響 / 意思決定ポイント / リスクと確認事項\n\n# 出力\n- 単一の自己完結HTML。iframe内に purpose / impact / decision points / risks の図解、iframe外に変換用テンプレートを残す。\n- 外部依存なし。ネットワーク通信・ストレージ・cookie・親フレームアクセスは禁止。\n\n# core.yaml\n{{core_yaml}}"
-  },
-  {
-    "id": "free-form",
-    "title": "自由に表現を指定する",
-    "description": "「こういう表現にしたい」を自分で書いて変換してもらう。",
-    "tags": ["custom"],
-    "prompt": "次の理解対象を、希望する表現で作り直してください。\n\n# 希望する表現\n- {{希望する表現}}\n\n# 出力\n- 単一の自己完結HTML。iframe内に図解、iframe外に変換用プロンプトテンプレートを残す。\n- 必ず含める: 重要概念 / 関係性 / 次に読むべき箇所 / 出典 / 次にAIへ聞くとよい質問。\n- 外部依存なし。ネットワーク通信・ストレージ・cookie・親フレームアクセスは禁止。iframeはsandbox=allow-scriptsのみ。\n\n# core.yaml\n{{core_yaml}}\n\n# view.yaml\n{{view_yaml}}"
+    "id": "view-free",
+    "title": "自由に表現を指定してビューを追加",
+    "description": "「こういう表現にしたい」を自分で書いて、新しいビューを追加してもらう。",
+    "tags": ["view", "custom"],
+    "prompt": "あなたは理解支援のための iframe ビューを作るアシスタントです。\n下記の yml をまず読み込んでから、希望する表現の新しい iframe ビュー（単一HTML document）を1つ作ってください。\n\n# 参照（必ず読み込む）\n- core.yaml: {{core_yaml_path}}\n- view.yaml: {{view_yaml_path}}\nこれらのファイルを開いて把握してから作ってください。yml の中身はこのプロンプトには貼り付けていません。\n\n# このビューの表現\n- {{希望する表現}}\n\n# 出力ルール\n- 出力は <!DOCTYPE html> から始まる単一の完結した HTML document 1つだけ（iframe に入れる本体）。\n- inline CSS / inline JS のみ。外部CDN・外部CSS・外部スクリプト・外部読み込みのiframeは使わない。ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスは行わない。\n- デフォルトはライトテーマ。URLハッシュ #theme=dark を読み取ってダークにも対応する（自分の location.hash を見て、hashchange も listen して data-theme を切り替える）。\n- 必ず含める: 重要概念 / 関係性 / 次に読むべき箇所 / 出典(source references) / 次にAIへ聞くとよい質問。\n- このビューは既存のビュー一式に「追加」されます。index.html やプロンプト、既存ビューは変更しないでください。返すのは新しいビューの HTML document だけです。"
   }
 ]

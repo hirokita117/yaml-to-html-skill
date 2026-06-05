@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "yaml-to-html",
   "displayName": "YAML to HTML Explainer",
-  "version": "0.1.0",
-  "description": "Turn a document, repository summary, PR/diff, README, design note, or spec into one self-contained, offline HTML file: a tailored explanation UI inside a sandboxed iframe plus copyable prompt templates outside it for regenerating or transforming the explanation with another AI.",
+  "version": "0.2.0",
+  "description": "Two skills that turn a document, repo summary, PR/diff, README, design note, or spec into an offline HTML explainer bundle. generate-explainer-yaml captures meaning (core.yaml) + presentation strategy (view.yaml); generate-explainer-html builds a light/dark bundle whose right pane switches between additive iframe views, with copyable prompts that ask a local-file-reading AI to add more views.",
   "author": {
     "name": "hirokita117",
     "url": "https://github.com/hirokita117"
@@ -18,6 +18,8 @@
     "explainer",
     "code-understanding",
     "self-contained",
-    "offline"
+    "offline",
+    "light-dark-theme",
+    "iframe-views"
   ]
 }

@@ -9,6 +9,10 @@
   --bg:#f7f8fa; --card:#fff; --border:#e3e6ec; --text:#1d2330; --muted:#5b6577;
   --accent:#2b6cff; --green:#1a9e6b; --amber:#c98a00; --red:#d6453c; --chip:#eef1f6;
 }
+:root[data-theme="dark"]{
+  --bg:#0f1115; --card:#171a21; --border:#2c313c; --text:#e6e9ef; --muted:#9aa3b2;
+  --accent:#5aa9ff; --green:#36c08f; --amber:#e0b34a; --red:#ff6b6b; --chip:#262b36;
+}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);
   font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",Meiryo,sans-serif;
@@ -179,6 +183,17 @@ footer{margin-top:18px;color:var(--muted);font-size:12px;border-top:1px solid va
 <script>
 (function(){
   "use strict";
+  // Theme: light by default. The shell propagates light/dark via the URL hash
+  // (#theme=dark|light) because it cannot reach into this sandboxed cross-origin
+  // iframe directly. We read our OWN location.hash on load and on hashchange.
+  function applyTheme(){
+    var m = (window.location.hash || "").match(/theme=(dark|light)/);
+    if (m && m[1] === "dark"){ document.documentElement.setAttribute("data-theme", "dark"); }
+    else { document.documentElement.removeAttribute("data-theme"); }
+  }
+  applyTheme();
+  window.addEventListener("hashchange", applyTheme);
+
   var concepts = document.querySelectorAll(".concept");
   var btnAll = document.getElementById("f-all");
   var btnHigh = document.getElementById("f-high");

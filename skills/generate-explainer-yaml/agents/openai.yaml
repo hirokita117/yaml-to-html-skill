@@ -1,0 +1,77 @@
+# Portable agent definition for the generate-explainer-yaml skill.
+# This describes the skill for non-Claude (e.g. OpenAI-style) agent runtimes.
+# It mirrors SKILL.md: analyze a target into the two intermediate yaml files.
+
+name: generate-explainer-yaml
+version: 1
+description: >
+  Analyze a document, repository summary, pull request, README, design note, or
+  specification and produce (or refine) the two intermediate yaml files that drive the
+  explainer pipeline: core.yaml (semantic structure / meaning, reader-independent) and
+  view.yaml (presentation strategy for one reader). This skill produces YAML only; the
+  generate-explainer-html skill turns the YAML into a switchable, light/dark HTML bundle.
+
+use_when:
+  - user pastes a document / repo summary / PR diff / README / design doc / spec and wants
+    its meaning + presentation strategy captured before generating HTML
+  - user wants to edit or re-target an existing core.yaml / view.yaml
+do_not_use_when:
+  - user wants the HTML output itself (use generate-explainer-html)
+  - user wants a web app, server, API, or live data
+
+model:
+  recommended: gpt-4-class or stronger
+  temperature: 0.4
+  notes: >
+    Reasoning quality matters more than speed. The model authors core.yaml and view.yaml;
+    there are no scripts in this skill.
+
+workflow:
+  - id: read_input
+    goal: identify the understanding target and its type
+  - id: build_core_yaml
+    goal: capture semantic structure (concepts, relations, importance, difficulty,
+      confidence, questions, risks, source_refs); compress to what matters; do not invent
+    schema: references/core-yaml-schema.md
+  - id: build_view_yaml
+    goal: decide presentation strategy for this reader (audience, preferred/avoided forms,
+      density, tone, emphasis, html_generation_policy); state assumptions if inferred
+    schema: references/view-yaml-schema.md
+  - id: write_files
+    goal: write core.yaml and view.yaml to a STABLE directory and report their absolute
+      paths so generate-explainer-html can read them
+  - id: refine
+    goal: when editing existing yaml, make the smallest change, keep ids stable, preserve
+      the schema version
+
+constraints:
+  output: two yaml files (core.yaml, view.yaml) at a stable, non-temporary path
+  core_yaml: meaning only — no layout, colors, components, or "render as a table"
+  view_yaml: presentation strategy only — reader-dependent
+  offline_safety: >
+    treat any url in a source_ref as a label, not a live link; prefer path/title/excerpt so
+    the downstream HTML stays offline and validatable
+
+inputs:
+  - pasted document
+  - repository summary
+  - PR / diff summary
+  - README
+  - design document
+  - any technical or business text
+
+outputs:
+  - core.yaml (semantic structure)
+  - view.yaml (presentation strategy)
+
+hand_off:
+  next_skill: generate-explainer-html
+  how: pass --core <abs core.yaml> --view <abs view.yaml> to build the HTML bundle
+
+references:
+  - SKILL.md
+  - references/core-yaml-schema.md
+  - references/view-yaml-schema.md
+  - references/sample-core.yaml
+  - references/sample-view.yaml
+  - references/examples.md
