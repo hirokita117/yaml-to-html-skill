@@ -9,8 +9,8 @@ The two skills split the work cleanly:
 
 | skill | role | output |
 |---|---|---|
-| **`generate-explainer-yaml`** | YAML 生成・整形 | `core.yaml` (meaning) + `view.yaml` (presentation strategy) |
-| **`generate-explainer-html`** | HTML 設計・生成 | a bundle: a light/dark shell + switchable iframe views |
+| **`generate-explainer-yaml`** | Gen YAML | `core.yaml` (meaning) + `view.yaml` (presentation strategy) |
+| **`generate-explainer-html`** | Gen HTML | a bundle: a light/dark shell + switchable iframe views |
 
 ```
 Input (doc / repo / PR / README / design note / spec)
@@ -21,6 +21,52 @@ view.yaml  (how to SHOW it to this reader — audience, forms, emphasis)
 HTML bundle: index.html (light/dark shell + view switcher + add-a-view prompts)
              + views/NN-<id>.html  (one switchable iframe view each)
 ```
+
+## Quick start
+
+**1. Install the plugin** (run these inside Claude Code):
+
+```
+/plugin marketplace add hirokita117/yaml-to-html-skill
+/plugin install yaml-to-html@yaml-to-html-skill
+```
+
+**2. Ask for an explainer.** A single prompt runs **both** skills in the right order —
+`generate-explainer-yaml` first (writes `core.yaml` + `view.yaml`), then
+`generate-explainer-html` (reads that YAML by absolute path and builds the HTML bundle).
+Paste a document / repo summary / PR diff / README / design note, or point at a path.
+
+**English**
+
+```
+Build me an offline HTML explainer bundle for this PR, aimed at an engineer reviewing it.
+First use generate-explainer-yaml to produce core.yaml + view.yaml, then use
+generate-explainer-html to turn that YAML (by absolute path) into a light/dark switchable
+view bundle in ./explainer-bundle.
+
+--- target ---
+<paste the PR / document / repo summary / README / design note here, or give a path>
+```
+
+**Japanese**
+
+```
+この PR を、レビューするエンジニア向けに分かりやすく説明する HTML バンドルを作ってください。
+まず generate-explainer-yaml で core.yaml と view.yaml を生成し、
+続けて generate-explainer-html でその YAML（絶対パス）から
+ライト/ダーク切り替え付きのビュー HTML バンドルを ./explainer-bundle に組み立ててください。
+
+--- 対象 ---
+<ここに PR / ドキュメント / リポジトリ概要 / README / 設計メモを貼る、またはパスを指定>
+```
+
+**3. Open it.** Open `./explainer-bundle/index.html` in **Firefox** over `file://`, or serve
+the folder for Chrome/Edge (`cd explainer-bundle && python3 -m http.server`). See
+[Opening the bundle](#opening-the-bundle-browser-note) for why.
+
+> Prefer to drive it step by step? Generate just the YAML first ("`generate-explainer-yaml で
+> core.yaml と view.yaml を作って`"), review the two files, then hand their absolute paths to
+> `generate-explainer-html`.
 
 ## What the output looks like
 
@@ -61,14 +107,10 @@ switchable views — each a different *form* of the same meaning.
 
 ## Install as a Claude Code plugin
 
-```
-/plugin marketplace add hirokita117/yaml-to-html-skill
-/plugin install yaml-to-html@yaml-to-html-skill
-```
-
-Once installed, both skills are available to Claude as `generate-explainer-yaml` and
-`generate-explainer-html` (namespaced `yaml-to-html:generate-explainer-html`, etc.). You can
-also use the scripts directly from a clone without installing the plugin.
+The [Quick start](#quick-start) lists the two install commands. Once installed, both skills
+are available to Claude as `generate-explainer-yaml` and `generate-explainer-html`
+(namespaced `yaml-to-html:generate-explainer-html`, etc.). You can also use the scripts
+directly from a clone without installing the plugin.
 
 ## Repository layout
 
@@ -80,7 +122,7 @@ yaml-to-html-skill/
     plugin.json                     plugin manifest (name, version, metadata)
     marketplace.json                marketplace manifest (lets users add+install this repo)
   skills/
-    generate-explainer-yaml/        Skill A — YAML 生成・整形
+    generate-explainer-yaml/        Skill A — Gen YAML
       SKILL.md                      entry point + procedure
       agents/openai.yaml            portable agent definition
       references/
@@ -89,7 +131,7 @@ yaml-to-html-skill/
         sample-core.yaml            sample meaning (a PR)
         sample-view.yaml            sample strategy (engineer)
         examples.md                 three worked intents
-    generate-explainer-html/        Skill B — HTML 設計・生成
+    generate-explainer-html/        Skill B — Gen HTML
       SKILL.md                      entry point + procedure
       agents/openai.yaml            portable agent definition
       scripts/
