@@ -112,6 +112,36 @@ are available to Claude as `generate-explainer-yaml` and `generate-explainer-htm
 (namespaced `yaml-to-html:generate-explainer-html`, etc.). You can also use the scripts
 directly from a clone without installing the plugin.
 
+## Updating the plugin
+
+When this skill is updated and the `version` in `.claude-plugin/plugin.json` (and
+`marketplace.json`) is bumped, users who installed via the marketplace need to update to get
+the new version. The installed copy does **not** update itself automatically by default.
+
+Run these inside Claude Code:
+
+```
+/plugin marketplace update yaml-to-html-skill
+/plugin install yaml-to-html@yaml-to-html-skill
+/reload-plugins
+```
+
+1. **`/plugin marketplace update yaml-to-html-skill`** — re-fetches the latest
+   `marketplace.json` from the repo so Claude Code sees the new version. This step is a
+   **required prerequisite**: without it, the install command below won't see the update.
+2. **`/plugin install yaml-to-html@yaml-to-html-skill`** — re-running install pulls in the
+   new version.
+3. **`/reload-plugins`** — activates the updated skill content in the current session
+   without a full restart. (Restarting Claude Code also works.)
+
+> **Tip — enable auto-update.** To skip these steps in future, run `/plugin`, open the
+> **Marketplaces** tab, select `yaml-to-html-skill`, and toggle **Enable auto-update**.
+> Claude Code will then refresh the marketplace and update the plugin at startup.
+
+To confirm which version you have, run `/plugin`, open the **Plugins** (or **Installed**)
+tab, and check the version shown for `yaml-to-html` against the `version` in
+[`.claude-plugin/plugin.json`](.claude-plugin/plugin.json).
+
 ## Repository layout
 
 ```
