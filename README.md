@@ -1,5 +1,9 @@
 # yaml-to-html explainer
 
+[![License: MIT](https://img.shields.io/github/license/hirokita117/yaml-to-html-skill)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/hirokita117/yaml-to-html-skill)](https://github.com/hirokita117/yaml-to-html-skill/releases)
+[![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-6E56CF)](#install-as-a-claude-code-plugin)
+
 A Claude Code plugin with **two skills** that turn an **understanding target** — a
 document, repository summary, pull request / diff, README, design note, or specification —
 into an **offline HTML explainer bundle** tailored to how a particular reader understands
