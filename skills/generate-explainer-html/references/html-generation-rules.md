@@ -96,6 +96,9 @@ touch the parent DOM, parent storage, or parent cookies — which is exactly wha
 - Be **responsive**: usable on narrow screens (the shell stacks to one column).
 - Respect **`prefers-reduced-motion`**: disable non-essential animation/transition.
 
+> **Quiz view documents** have additional type-specific rules (rendering per question
+> type, the grading contract, audience adaptation): see `quiz-view-rules.md`.
+
 ## Content rules for the inner UI
 
 The iframe document must not be a flat paragraph dump. It must:

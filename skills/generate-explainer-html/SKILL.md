@@ -1,6 +1,6 @@
 ---
 name: generate-explainer-html
-description: turn core.yaml + view.yaml (the explainer's meaning + presentation strategy) into a self-contained html bundle that helps users understand documents, repositories, pull requests, design notes, or specifications. the bundle has a light/dark shell whose right pane switches between multiple iframe view documents, and copyable prompt templates that ask a local-file-reading ai to add another switchable view. use when the user has (or wants) a core.yaml/view.yaml pair and wants a visual html explainer, or wants to add a new representation (table, worktree, cards, faq, beginner, engineer, pdm view, …) to an existing bundle. produce the yaml first with the generate-explainer-yaml skill.
+description: turn core.yaml + view.yaml (the explainer's meaning + presentation strategy) — plus quiz.yaml when present — into a self-contained html bundle that helps users understand documents, repositories, pull requests, design notes, or specifications. the bundle has a light/dark shell whose right pane switches between multiple iframe view documents, and copyable prompt templates that ask a local-file-reading ai to add another switchable view. an interactive quiz tab (comprehension check with instant grading) is added by default unless the user explicitly declines. use when the user has (or wants) a core.yaml/view.yaml pair and wants a visual html explainer, or wants to add a new representation (table, worktree, cards, faq, beginner, engineer, pdm view, quiz, …) to an existing bundle. produce the yaml first with the generate-explainer-yaml skill.
 ---
 
 # generate-explainer-html
@@ -18,10 +18,10 @@ This is the **second half** of the pipeline. The `core.yaml` / `view.yaml` come 
 path**, authors iframe view documents, and assembles the bundle.
 
 ```
-core.yaml + view.yaml  (from generate-explainer-yaml)
+core.yaml + view.yaml (+ quiz.yaml)  (from generate-explainer-yaml)
   ↓ design + generate (this skill)
 HTML bundle: index.html (light/dark shell + view switcher + prompt cards)
-             + views/NN-<id>.html  (one switchable iframe view each)
+             + views/NN-<id>.html  (one switchable iframe view each, incl. a quiz tab)
 ```
 
 ## The bundle (the output)
@@ -34,6 +34,7 @@ The output is a **directory**, not a single file:
   views.json          ordered manifest of views {id, label, file}
   core.yaml           copied in (its absolute path is cited by the prompts)
   view.yaml           copied in
+  quiz.yaml           copied in when present (comprehension-check questions)
   views/
     01-<id>.html       an iframe view document (full <!DOCTYPE html>, light default)
     02-<id>.html
@@ -49,9 +50,9 @@ or chat UI, and do **not** depend on any external CDN/CSS/JS.
 
 ## Steps
 
-1. **Get the YAML pair.** Take the absolute paths to `core.yaml` and `view.yaml` (from the
-   `generate-explainer-yaml` skill, or the user). **Read them.** If they don't exist yet,
-   produce them with `generate-explainer-yaml` first.
+1. **Get the YAML files.** Take the absolute paths to `core.yaml`, `view.yaml`, and (by
+   default) `quiz.yaml` (from the `generate-explainer-yaml` skill, or the user). **Read
+   them.** If they don't exist yet, produce them with `generate-explainer-yaml` first.
 
 2. **Author one iframe view document** — a full `<!DOCTYPE html>` document tailored to the
    target and reader. Choose the form(s) from `view.yaml` (table, worktree, cards, faq,
@@ -62,19 +63,28 @@ or chat UI, and do **not** depend on any external CDN/CSS/JS.
    CSS/JS only; no network. Follow `references/html-generation-rules.md`. Example:
    `references/sample-iframe.html`.
 
-3. **Author the prompt templates** as a `prompts.json` array — the "add a view" cards
-   (table, worktree, beginner, engineer, PdM/Biz, free-form). Each cites the YAML via
-   `{{core_yaml_path}}` / `{{view_yaml_path}}` and **must not** embed YAML content. Patterns:
+3. **Author the quiz view document (default — skip only on explicit opt-out).** Unless
+   the user explicitly declined a quiz, also author an interactive quiz view from
+   `quiz.yaml` (or, if no `quiz.yaml` exists, derive items from `core.yaml`): answer →
+   instant grading → explanation, order adapted to the `view.yaml` audience and per-item
+   difficulty. Rules: `references/quiz-view-rules.md`. Example:
+   `references/sample-quiz-iframe.html`.
+
+4. **Author the prompt templates** as a `prompts.json` array — the "add a view" cards
+   (table, worktree, beginner, engineer, PdM/Biz, quiz, free-form). Each cites the YAML
+   via `{{core_yaml_path}}` / `{{view_yaml_path}}` (the quiz card also
+   `{{quiz_yaml_path}}`) and **must not** embed YAML content. Patterns:
    `references/prompt-template-patterns.md`. Starter set: `references/sample-prompts.json`.
 
-4. **Build the bundle** with `scripts/build_html.py` (see below). Pass `--core` / `--view`
-   (copied in; their absolute paths feed the prompt placeholders) and one or more
-   `--view-html "ラベル=その.html"`.
+5. **Build the bundle** with `scripts/build_html.py` (see below). Pass `--core` / `--view`
+   / `--quiz` (copied in; their absolute paths feed the prompt placeholders) and one or
+   more `--view-html "ラベル=その.html"` — including the quiz view, e.g.
+   `--view-html "クイズ=quiz.html"`.
 
-5. **Validate** the bundle with `scripts/validate_html.py` on `index.html` **and** every
+6. **Validate** the bundle with `scripts/validate_html.py` on `index.html` **and** every
    `views/*.html`. Fix any error and re-validate until it exits 0.
 
-6. **Hand the user the bundle folder** with open instructions (below). Summarize which views
+7. **Hand the user the bundle folder** with open instructions (below). Summarize which views
    exist and which "add a view" templates are available.
 
 ## Adding a view later (the additive flow)
@@ -103,14 +113,15 @@ python scripts/build_html.py \
   --bundle ./explainer-bundle \
   --core /abs/path/core.yaml \
   --view /abs/path/view.yaml \
+  --quiz /abs/path/quiz.yaml \
   --prompts prompts.json \
   --view-html "エンジニア=engineer.html" \
-  --view-html "テーブル=table.html"
+  --view-html "クイズ=quiz.html"
 ```
 
-`--bundle` and `--prompts` are required; `--core` / `--view` are optional (recommended — the
-prompts cite their absolute path) and are left in place on a re-run if omitted; `--view-html`
-is repeatable and appends/updates views.
+`--bundle` and `--prompts` are required; `--core` / `--view` / `--quiz` are optional
+(recommended — the prompts cite their absolute path) and are left in place on a re-run if
+omitted; `--view-html` is repeatable and appends/updates views.
 
 Validate (safety / self-containment check), including every view file:
 
@@ -153,25 +164,31 @@ python scripts/build_html.py \
   --bundle ./sample-bundle \
   --core ../generate-explainer-yaml/references/sample-core.yaml \
   --view ../generate-explainer-yaml/references/sample-view.yaml \
+  --quiz ../generate-explainer-yaml/references/sample-quiz.yaml \
   --prompts references/sample-prompts.json \
-  --view-html "エンジニア=references/sample-iframe.html"
+  --view-html "エンジニア=references/sample-iframe.html" \
+  --view-html "クイズ=references/sample-quiz-iframe.html"
 
 python scripts/validate_html.py ./sample-bundle/index.html ./sample-bundle/views/*.html
 ```
 
 Open `sample-bundle/index.html` (Firefox / served). The right pane shows an
-engineer-oriented PR explanation (worktree + reading order + review checklist); the left
-pane has the copyable "add a view" templates and the YAML viewers.
+engineer-oriented PR explanation (worktree + reading order + review checklist) plus an
+interactive quiz tab; the left pane has the copyable "add a view" templates and the YAML
+viewers.
 
 ## Reference material
 
 - `references/html-generation-rules.md` — safety + UI rules for view documents (src-loaded
   iframe, light default, `#theme` hash)
+- `references/quiz-view-rules.md` — rules for the interactive quiz view (per-type
+  rendering, grading contract, audience adaptation)
 - `references/output-bundle-structure.md` — the bundle's structure and shell
 - `references/prompt-template-patterns.md` — "add a view" prompt templates + path placeholders
 - `references/sample-iframe.html` — sample iframe view (engineer)
+- `references/sample-quiz-iframe.html` — sample interactive quiz view
 - `references/sample-prompts.json` — sample "add a view" templates
 - `references/examples.md` — three worked reader views
 - `agents/openai.yaml` — portable description of this skill for non-Claude agents
 - YAML schema (produced by the sibling skill): `../generate-explainer-yaml/references/`
-  (`core-yaml-schema.md`, `view-yaml-schema.md`)
+  (`core-yaml-schema.md`, `view-yaml-schema.md`, `quiz-yaml-schema.md`)

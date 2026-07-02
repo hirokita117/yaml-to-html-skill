@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR #482 を理解する — quiz view</title>
+<style>
+:root{
+  --bg:#f7f8fa; --card:#fff; --border:#e3e6ec; --text:#1d2330; --muted:#5b6577;
+  --accent:#2b6cff; --green:#1a9e6b; --amber:#c98a00; --red:#d6453c; --chip:#eef1f6;
+  --ok-bg:#e3f3ec; --ng-bg:#fde8e6;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --card:#171a21; --border:#2c313c; --text:#e6e9ef; --muted:#9aa3b2;
+  --accent:#5aa9ff; --green:#36c08f; --amber:#e0b34a; --red:#ff6b6b; --chip:#262b36;
+  --ok-bg:#15342a; --ng-bg:#3a1f1d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",Meiryo,sans-serif;
+  line-height:1.6;padding:18px;font-size:14px}
+h1{font-size:18px;margin:0 0 2px}
+h2{font-size:15px;margin:22px 0 8px}
+.lead{color:var(--muted);margin:0 0 6px}
+.notice{background:var(--chip);border:1px solid var(--border);border-radius:8px;
+  padding:8px 10px;font-size:12px;color:var(--muted);margin:10px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin:10px 0}
+.quiz h3{margin:0 0 8px;font-size:14px}
+.badges{display:inline-flex;gap:6px;flex-wrap:wrap;vertical-align:middle;margin-left:6px}
+.badge{font-size:11px;border-radius:6px;padding:1px 7px;border:1px solid var(--border);background:var(--chip);color:var(--muted)}
+.badge.diff-low{background:var(--ok-bg);color:var(--green);border-color:var(--border)}
+.badge.diff-high{background:#e7e0ff;color:#5a3bd0;border-color:#d2c6f7}
+:root[data-theme="dark"] .badge.diff-high{background:#2c2450;color:#b7a5ff;border-color:#443a6e}
+fieldset{border:0;margin:0;padding:0}
+legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.choice{display:flex;gap:8px;align-items:flex-start;padding:7px 10px;margin:5px 0;
+  border:1px solid var(--border);border-radius:8px;cursor:pointer}
+.choice:hover{border-color:var(--accent)}
+.choice input{margin-top:4px}
+.choice input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.quiz.done .choice{cursor:default;opacity:.85}
+button{font:inherit}
+.act-btn{border:1px solid var(--border);background:var(--card);border-radius:999px;
+  padding:5px 14px;font-size:12px;cursor:pointer;color:var(--text)}
+.act-btn:hover:enabled{border-color:var(--accent)}
+.act-btn:disabled{opacity:.45;cursor:default}
+.act-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.act-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.order-pool{display:flex;flex-direction:column;gap:5px;margin:6px 0}
+.order-btn{text-align:left;border:1px solid var(--border);background:var(--card);
+  border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--text)}
+.order-btn:hover:enabled{border-color:var(--accent)}
+.order-btn:disabled{opacity:.4;cursor:default}
+.order-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.order-seq{margin:8px 0;padding-left:24px;min-height:1.2em}
+.order-seq li{margin:3px 0}
+.order-hint,.order-empty{color:var(--muted);font-size:12px}
+.actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.feedback{border-radius:8px;padding:10px 12px;margin-top:10px}
+.quiz.ok .feedback{background:var(--ok-bg)}
+.quiz.ng .feedback{background:var(--ng-bg)}
+.verdict{margin:0 0 4px;font-weight:700}
+.quiz.ok .verdict{color:var(--green)}
+.quiz.ng .verdict{color:var(--red)}
+.expl{margin:0 0 4px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--muted);margin:0}
+.src b{color:var(--text)}
+.score{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.score .nums{font-size:16px;font-weight:700}
+details.warmup summary{cursor:pointer;font-size:14px;font-weight:600;padding:4px 0}
+details.warmup summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.q{background:var(--chip);border-radius:8px;padding:8px 10px;margin:6px 0}
+.q .why{color:var(--muted);font-size:12px}
+footer{margin-top:18px;color:var(--muted);font-size:12px;border-top:1px solid var(--border);padding-top:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>PR #482 — 理解度チェッククイズ</h1>
+  <p class="lead">quiz.yaml から生成した確認クイズ。回答するとその場で採点され、解説と出典が表示されます。</p>
+  <p class="src">source: <b>PR #482 (feature/api-rate-limit)</b> · 読者設定（エンジニア）に合わせ、関係あて・並べ替えを先に出題しています。</p>
+  <p class="notice">スコアはこのページ内だけで数えています。ページを再読み込みするとリセットされます。</p>
+</header>
+
+<section class="quiz card" data-qid="q_rel_mw_store" data-type="single" data-correct="ch_depends">
+  <h3>Q1. RateLimitMiddleware と TokenBucketStore の関係として正しいものはどれ？
+    <span class="badges"><span class="badge">関係あて</span><span class="badge">難易度 中</span></span></h3>
+  <fieldset>
+    <legend>選択肢</legend>
+    <label class="choice"><input type="radio" name="q_rel_mw_store" value="ch_depends"><span>ミドルウェアがストアに依存し、許可/拒否の判断をトークン問い合わせで行う</span></label>
+    <label class="choice"><input type="radio" name="q_rel_mw_store" value="ch_contains"><span>ミドルウェアがストアを内包し、リクエストごとに新しいストアを作る</span></label>
+    <label class="choice"><input type="radio" name="q_rel_mw_store" value="ch_contrast"><span>両者は同じ機能の別実装で、どちらか一方だけが使われる</span></label>
+  </fieldset>
+  <div class="feedback" hidden>
+    <p class="verdict"></p>
+    <p class="expl">rel_mw_store は depends_on。ストアが「許可してよいか」の単一の真実源で、ミドルウェアはそこにトークンを要求する。リクエストごとに生成はしないし、代替実装の関係でもない。</p>
+    <p class="src">関連概念: RateLimitMiddleware / TokenBucketStore · 出典: <b>src/api/middleware/rate_limit.py</b> : 14–76</p>
+  </div>
+</section>
+
+<section class="quiz card" data-qid="q_request_flow" data-type="ordering" data-correct="st_key,st_config,st_take,st_result">
+  <h3>Q2. リクエストが処理される流れを正しい順に並べ替えてください。
+    <span class="badges"><span class="badge">並べ替え</span><span class="badge diff-high">難易度 高</span></span></h3>
+  <p class="order-hint">選択肢を正しい順にクリックして並べます（「1つ戻す」でやり直せます）。</p>
+  <div class="order-pool" role="group" aria-label="並べ替えの選択肢">
+    <button type="button" class="order-btn" data-cid="st_take">ストアにトークンが残っているか問い合わせる</button>
+    <button type="button" class="order-btn" data-cid="st_key">クライアントからキーを導出する</button>
+    <button type="button" class="order-btn" data-cid="st_result">トークンがあれば通し、なければ 429 を返す</button>
+    <button type="button" class="order-btn" data-cid="st_config">ルートの上限値を設定から引く</button>
+  </div>
+  <ol class="order-seq" aria-label="いまの並び" aria-live="polite"><li class="order-empty">（まだ選択されていません）</li></ol>
+  <div class="actions">
+    <button type="button" class="act-btn order-undo" disabled>1つ戻す</button>
+    <button type="button" class="act-btn primary order-grade" disabled>採点する</button>
+  </div>
+  <div class="feedback" hidden>
+    <p class="verdict"></p>
+    <p class="expl">正しい順: キー導出 → 上限の設定引き → ストアへ問い合わせ → 許可/429。ミドルウェアはハンドラ実行前にこのすべてを完結させる。</p>
+    <p class="src">関連概念: RateLimitMiddleware / TokenBucketStore / Per-route limits config · 出典: <b>src/api/middleware/rate_limit.py</b> : 14–76</p>
+  </div>
+</section>
+
+<section class="quiz card" data-qid="q_tests_clock" data-type="single" data-correct="ch_deterministic">
+  <h3>Q3. テストが fake clock を使っているのはなぜ？
+    <span class="badges"><span class="badge">択一</span><span class="badge diff-high">難易度 高</span></span></h3>
+  <fieldset>
+    <legend>選択肢</legend>
+    <label class="choice"><input type="radio" name="q_tests_clock" value="ch_speed"><span>テストの実行時間を計測してレポートするため</span></label>
+    <label class="choice"><input type="radio" name="q_tests_clock" value="ch_deterministic"><span>トークンの補充が経過時間に依存するため、タイミングを決定的にする</span></label>
+    <label class="choice"><input type="radio" name="q_tests_clock" value="ch_tz"><span>タイムゾーンの違いによるバグを再現するため</span></label>
+  </fieldset>
+  <div class="feedback" hidden>
+    <p class="verdict"></p>
+    <p class="expl">TokenBucketStore は経過時間でトークンを補充する。実時間に依存すると refill のテストが不安定になるため、fake clock で時間を進めて決定的に検証している。</p>
+    <p class="src">関連概念: Rate limit tests / TokenBucketStore · 出典: <b>tests/api/test_rate_limit.py</b> : 1–140</p>
+  </div>
+</section>
+
+<section class="quiz card" data-qid="q_multi_risks" data-type="multiple" data-correct="ch_mem,ch_proc">
+  <h3>Q4. この PR に対して core.yaml が挙げているリスクはどれ？（複数選択）
+    <span class="badges"><span class="badge">複数選択</span><span class="badge">難易度 中</span></span></h3>
+  <fieldset>
+    <legend>選択肢（あてはまるものすべて）</legend>
+    <label class="choice"><input type="checkbox" name="q_multi_risks" value="ch_mem"><span>バケットが削除されずメモリが増え続ける可能性</span></label>
+    <label class="choice"><input type="checkbox" name="q_multi_risks" value="ch_proc"><span>インスタンス数に応じて実効上限が増えてしまう</span></label>
+    <label class="choice"><input type="checkbox" name="q_multi_risks" value="ch_slow"><span>トークン計算が重くレイテンシが悪化する</span></label>
+  </fieldset>
+  <div class="actions">
+    <button type="button" class="act-btn primary multi-grade" disabled>採点する</button>
+  </div>
+  <div class="feedback" hidden>
+    <p class="verdict"></p>
+    <p class="expl">risk_memory（バケットの無限増加）と risk_distributed（プロセスごとの上限）が記録されているリスク。レイテンシ悪化は core.yaml には挙げられていない。</p>
+    <p class="src">関連概念: TokenBucketStore / RateLimitMiddleware · 出典: <b>src/api/middleware/token_bucket.py</b> : 1–120</p>
+  </div>
+</section>
+
+<section class="quiz card" data-qid="q_unknown_route" data-type="single" data-correct="ch_false">
+  <h3>Q5. 設定に載っていないルートへのリクエストは、制限なしで通過する。○か×か？
+    <span class="badges"><span class="badge">○×</span><span class="badge">難易度 中</span></span></h3>
+  <fieldset>
+    <legend>選択肢</legend>
+    <label class="choice"><input type="radio" name="q_unknown_route" value="ch_true"><span>○ 制限なしで通過する</span></label>
+    <label class="choice"><input type="radio" name="q_unknown_route" value="ch_false"><span>× デフォルトの上限が適用される</span></label>
+  </fieldset>
+  <div class="feedback" hidden>
+    <p class="verdict"></p>
+    <p class="expl">Per-route limits config は route → limit のマッピングで、未知のルートにはデフォルト値（例: 60 req/min）がフォールバックとして適用される。「設定漏れ = 無制限」ではない。</p>
+    <p class="src">関連概念: Per-route limits config · 出典: <b>config/rate_limits.yaml</b> : 1–12</p>
+  </div>
+</section>
+
+<details class="warmup card">
+  <summary>ウォームアップ（易しい問題 2問）— 基本を確認したい人向け</summary>
+
+  <section class="quiz" data-qid="q_mw_role" data-type="single" data-correct="ch_reject">
+    <h3>Q6. RateLimitMiddleware の役割として正しいものはどれ？
+      <span class="badges"><span class="badge">択一</span><span class="badge diff-low">難易度 低</span></span></h3>
+    <fieldset>
+      <legend>選択肢</legend>
+      <label class="choice"><input type="radio" name="q_mw_role" value="ch_reject"><span>上限を超えたリクエストをハンドラ実行前に 429 で拒否する</span></label>
+      <label class="choice"><input type="radio" name="q_mw_role" value="ch_log"><span>リクエストの内容をログに記録する</span></label>
+      <label class="choice"><input type="radio" name="q_mw_role" value="ch_cache"><span>レスポンスをキャッシュして高速化する</span></label>
+    </fieldset>
+    <div class="feedback" hidden>
+      <p class="verdict"></p>
+      <p class="expl">ミドルウェアは各公開ルートをラップし、ストアにトークンを問い合わせてバケットが空なら 429 を返す。ログ記録やキャッシュはこの PR の役割ではない。</p>
+      <p class="src">関連概念: RateLimitMiddleware · 出典: <b>src/api/middleware/rate_limit.py</b> : 14–76</p>
+    </div>
+  </section>
+
+  <section class="quiz" data-qid="q_store_shared" data-type="single" data-correct="ch_false">
+    <h3>Q7. TokenBucketStore のバケットは複数インスタンス間で共有される。○か×か？
+      <span class="badges"><span class="badge">○×</span><span class="badge diff-low">難易度 低</span></span></h3>
+    <fieldset>
+      <legend>選択肢</legend>
+      <label class="choice"><input type="radio" name="q_store_shared" value="ch_true"><span>○ 共有される</span></label>
+      <label class="choice"><input type="radio" name="q_store_shared" value="ch_false"><span>× 共有されない</span></label>
+    </fieldset>
+    <div class="feedback" hidden>
+      <p class="verdict"></p>
+      <p class="expl">ストアはインメモリでプロセスごとに独立している。そのため実効的な上限はインスタンス数に比例して増える（risk_distributed）。共有ストアはこの PR の範囲外。</p>
+      <p class="src">関連概念: TokenBucketStore · 出典: <b>src/api/middleware/token_bucket.py</b> : 1–120</p>
+    </div>
+  </section>
+</details>
+
+<h2>スコア</h2>
+<div class="card score">
+  <span class="nums" id="score-text" aria-live="polite">採点済み 0 / 7 ・ 正解 0</span>
+  <button type="button" class="act-btn" id="retry">もう一度（全問リセット）</button>
+  <span class="order-hint">再読み込みでもリセットされます（このページはスコアを保存しません）。</span>
+</div>
+
+<h2>次に AI に聞くとよい質問</h2>
+<div class="card">
+  <div class="q">複数インスタンスで動くとき、上限はどう振る舞う？<div class="why">なぜ重要: in-memory バケツはプロセス毎なので実効上限が増える。</div></div>
+  <div class="q">client key はどう導出され、偽装できる？<div class="why">なぜ重要: 弱いキーは上限回避を許す。</div></div>
+</div>
+
+<h2>出典（source references）</h2>
+<div class="card src">
+  <div><b>src/api/middleware/rate_limit.py</b> — class RateLimitMiddleware ...</div>
+  <div><b>src/api/middleware/token_bucket.py</b> — class TokenBucketStore ...</div>
+  <div><b>config/rate_limits.yaml</b> — default: 60 ...</div>
+  <div><b>tests/api/test_rate_limit.py</b> — def test_rejects_when_bucket_empty(): ...</div>
+</div>
+
+<footer>このクイズは理解補助です。正解は core.yaml に記録された事実に基づきます。確実なことはコードとテストで確認してください。</footer>
+
+<script>
+(function(){
+  "use strict";
+  // Theme: light by default. The shell propagates light/dark via the URL hash
+  // (#theme=dark|light) because it cannot reach into this sandboxed cross-origin
+  // iframe directly. We read our OWN location.hash on load and on hashchange.
+  function applyTheme(){
+    var m = (window.location.hash || "").match(/theme=(dark|light)/);
+    if (m && m[1] === "dark"){ document.documentElement.setAttribute("data-theme", "dark"); }
+    else { document.documentElement.removeAttribute("data-theme"); }
+  }
+  applyTheme();
+  window.addEventListener("hashchange", applyTheme);
+
+  var quizzes = document.querySelectorAll(".quiz");
+  var total = quizzes.length;
+  var scoreText = document.getElementById("score-text");
+
+  function updateScore(){
+    var done = 0, ok = 0;
+    for (var i = 0; i < quizzes.length; i++){
+      if (quizzes[i].classList.contains("done")){ done++; }
+      if (quizzes[i].classList.contains("ok")){ ok++; }
+    }
+    scoreText.textContent = "採点済み " + done + " / " + total + " ・ 正解 " + ok;
+  }
+
+  function finish(quiz, isCorrect){
+    quiz.classList.add("done", isCorrect ? "ok" : "ng");
+    var fb = quiz.querySelector(".feedback");
+    fb.querySelector(".verdict").textContent = isCorrect ? "◯ 正解！" : "✕ 不正解";
+    fb.hidden = false;
+    var controls = quiz.querySelectorAll("input, .order-btn, .order-undo, .order-grade, .multi-grade");
+    for (var i = 0; i < controls.length; i++){ controls[i].disabled = true; }
+    updateScore();
+  }
+
+  function sameSet(a, b){
+    if (a.length !== b.length){ return false; }
+    for (var i = 0; i < a.length; i++){
+      if (b.indexOf(a[i]) === -1){ return false; }
+    }
+    return true;
+  }
+
+  // single choice / true-false / relation: grade as soon as a radio is picked
+  function wireSingle(quiz){
+    var correct = quiz.getAttribute("data-correct");
+    var radios = quiz.querySelectorAll("input[type=radio]");
+    for (var i = 0; i < radios.length; i++){
+      radios[i].addEventListener("change", function(ev){
+        finish(quiz, ev.target.value === correct);
+      });
+    }
+  }
+
+  // multiple choice: explicit grade button, exact set match
+  function wireMultiple(quiz){
+    var correct = quiz.getAttribute("data-correct").split(",");
+    var boxes = quiz.querySelectorAll("input[type=checkbox]");
+    var grade = quiz.querySelector(".multi-grade");
+    function anyChecked(){
+      for (var i = 0; i < boxes.length; i++){ if (boxes[i].checked){ return true; } }
+      return false;
+    }
+    for (var i = 0; i < boxes.length; i++){
+      boxes[i].addEventListener("change", function(){ grade.disabled = !anyChecked(); });
+    }
+    grade.addEventListener("click", function(){
+      var picked = [];
+      for (var i = 0; i < boxes.length; i++){ if (boxes[i].checked){ picked.push(boxes[i].value); } }
+      finish(quiz, sameSet(picked, correct));
+    });
+  }
+
+  // ordering: click choices in order (keyboard friendly), undo, explicit grade
+  function wireOrdering(quiz){
+    var correct = quiz.getAttribute("data-correct").split(",");
+    var pool = quiz.querySelectorAll(".order-btn");
+    var seqEl = quiz.querySelector(".order-seq");
+    var undo = quiz.querySelector(".order-undo");
+    var grade = quiz.querySelector(".order-grade");
+    var picked = [];
+    quiz._orderPicked = picked;
+    function renderSeq(){
+      seqEl.textContent = "";
+      if (!picked.length){
+        var empty = document.createElement("li");
+        empty.className = "order-empty";
+        empty.textContent = "（まだ選択されていません）";
+        seqEl.appendChild(empty);
+      }
+      for (var i = 0; i < picked.length; i++){
+        var li = document.createElement("li");
+        li.textContent = picked[i].textContent;
+        seqEl.appendChild(li);
+      }
+      undo.disabled = picked.length === 0;
+      grade.disabled = picked.length !== pool.length;
+    }
+    quiz._orderRender = renderSeq;
+    for (var i = 0; i < pool.length; i++){
+      pool[i].addEventListener("click", function(ev){
+        picked.push(ev.target);
+        ev.target.disabled = true;
+        renderSeq();
+      });
+    }
+    undo.addEventListener("click", function(){
+      var last = picked.pop();
+      if (last){ last.disabled = false; }
+      renderSeq();
+    });
+    grade.addEventListener("click", function(){
+      var ids = [];
+      for (var i = 0; i < picked.length; i++){ ids.push(picked[i].getAttribute("data-cid")); }
+      finish(quiz, ids.join(",") === correct.join(","));
+    });
+  }
+
+  for (var i = 0; i < quizzes.length; i++){
+    var type = quizzes[i].getAttribute("data-type");
+    if (type === "multiple"){ wireMultiple(quizzes[i]); }
+    else if (type === "ordering"){ wireOrdering(quizzes[i]); }
+    else { wireSingle(quizzes[i]); }
+  }
+
+  document.getElementById("retry").addEventListener("click", function(){
+    for (var i = 0; i < quizzes.length; i++){
+      var quiz = quizzes[i];
+      quiz.classList.remove("done", "ok", "ng");
+      quiz.querySelector(".feedback").hidden = true;
+      var inputs = quiz.querySelectorAll("input");
+      for (var j = 0; j < inputs.length; j++){
+        inputs[j].checked = false;
+        inputs[j].disabled = false;
+      }
+      var multiGrade = quiz.querySelector(".multi-grade");
+      if (multiGrade){ multiGrade.disabled = true; }
+      if (quiz._orderPicked){
+        quiz._orderPicked.length = 0;
+        var pool = quiz.querySelectorAll(".order-btn");
+        for (var k = 0; k < pool.length; k++){ pool[k].disabled = false; }
+        quiz._orderRender();
+      }
+    }
+    updateScore();
+  });
+
+  updateScore();
+})();
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@ what makes views **additive** (you can grow the bundle one view at a time).
   views.json          ordered manifest: {"views":[{"id","label","file"}, ...]}
   core.yaml           copied in; its absolute path is cited by the prompts
   view.yaml           copied in
+  quiz.yaml           copied in when present (comprehension-check questions)
   views/
     01-<id>.html       an iframe view document (full <!DOCTYPE html>, light default)
     02-<id>.html
@@ -27,7 +28,7 @@ Two panes plus a header:
 header                    title + subtitle + light/dark THEME TOGGLE
 main layout (2 panes)
   left  pane:  prompt templates ("add a view" cards, with copy buttons)
-               core.yaml / view.yaml viewers (tabbed, display-only)
+               core.yaml / view.yaml / quiz.yaml viewers (tabbed, display-only)
                help / usage
   right pane:  view switcher (tabs, one per manifest entry)
                ONE <iframe src="views/<file>#theme=...">  (the current view)
@@ -52,7 +53,7 @@ inline <style> / <script>   (no external CSS/JS)
 
 - A **full HTML document** tailored to the target and the reader, loaded via local `src`.
 - The representation is **not fixed** — table, worktree, cards, faq, comparison, sequence,
-  reading path, risk map, dependency map, glossary, tutorial, review checklist, …
+  reading path, risk map, dependency map, glossary, tutorial, review checklist, quiz, …
 - Must include: source references, important concepts, relations, what to read next, next
   questions. Must have visual structure, not flat prose.
 - **Light by default**; reads `#theme` to support dark. See `html-generation-rules.md`.
@@ -61,13 +62,14 @@ inline <style> / <script>   (no external CSS/JS)
 
 - Not a chat UI. A set of cards that ask a local-file-reading AI to author **one new view**.
 - Each card: title, usage description, prompt body (collapsible), copy button, optional tags.
-- Prompts cite the YAML by **absolute path** (`{{core_yaml_path}}` / `{{view_yaml_path}}`)
-  and never embed YAML content.
+- Prompts cite the YAML by **absolute path** (`{{core_yaml_path}}` / `{{view_yaml_path}}`
+  / `{{quiz_yaml_path}}`) and never embed YAML content.
 - See `prompt-template-patterns.md` for the required set and `sample-prompts.json`.
 
 ## YAML viewers (left pane)
 
-- `core.yaml` and `view.yaml` are embedded as read-only text, toggled by tabs (display-only).
+- `core.yaml`, `view.yaml`, and (when present) `quiz.yaml` are embedded as read-only text,
+  toggled by tabs (display-only).
 - They make the bundle self-explanatory. (The prompts do **not** use this embedded copy;
   they point at the on-disk file by absolute path.)
 

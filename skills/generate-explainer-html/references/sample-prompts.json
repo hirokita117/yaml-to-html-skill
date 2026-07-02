@@ -35,6 +35,13 @@
     "prompt": "あなたは理解支援のための iframe ビューを作るアシスタントです。\n下記の yml をまず読み込んでから、PdM / Biz 向けの新しい iframe ビュー（単一HTML document）を1つ作ってください。技術詳細より意思決定材料を中心にします。\n\n# 参照（必ず読み込む）\n- core.yaml: {{core_yaml_path}}\n- view.yaml: {{view_yaml_path}}\nこれらのファイルを開いて把握してから作ってください。yml の中身はこのプロンプトには貼り付けていません。\n\n# このビューの表現\n- 何が変わるか / なぜ重要か / ユーザー影響 / 業務影響 / 意思決定ポイント / リスクと確認事項\n- purpose / impact / decision points / risks を視覚的にグループ化\n\n# 出力ルール\n- 出力は <!DOCTYPE html> から始まる単一の完結した HTML document 1つだけ（iframe に入れる本体）。\n- inline CSS / inline JS のみ。外部CDN・外部CSS・外部スクリプト・外部読み込みのiframeは使わない。ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスは行わない。\n- デフォルトはライトテーマ。URLハッシュ #theme=dark を読み取ってダークにも対応する（自分の location.hash を見て、hashchange も listen して data-theme を切り替える）。\n- 必ず含める: 重要概念 / 関係性 / 次に読むべき箇所 / 出典(source references) / 次にAIへ聞くとよい質問。\n- このビューは既存のビュー一式に「追加」されます。index.html やプロンプト、既存ビューは変更しないでください。返すのは新しいビューの HTML document だけです。"
   },
   {
+    "id": "view-quiz",
+    "title": "クイズのビューを追加",
+    "description": "理解度を確認したい人向け。選択式・○×・関係あて・並べ替えのクイズビューを追加する。",
+    "tags": ["view", "quiz"],
+    "prompt": "あなたは理解支援のための iframe ビューを作るアシスタントです。\n下記の yml をまず読み込んでから、理解度チェック用のクイズの新しい iframe ビュー（単一HTML document）を1つ作ってください。\n\n# 参照（必ず読み込む）\n- core.yaml: {{core_yaml_path}}\n- view.yaml: {{view_yaml_path}}\n- quiz.yaml: {{quiz_yaml_path}}\nこれらのファイルを開いて把握してから作ってください。yml の中身はこのプロンプトには貼り付けていません。quiz.yaml が未指定・存在しない場合は、core.yaml の concepts / relations / risks からクイズ（問題・選択肢・正解・解説）を自分で導出してください。\n\n# このビューの表現\n- 出題形式: 択一 / 複数選択 / ○× / 関係あて（AとBの関係は？） / 並べ替え（正しい順に並べる）。quiz.yaml の items をすべて出題する。\n- 回答を選ぶと即時採点し、正誤の見た目と解説（explanation）・関連概念・出典を表示する。採点・解説表示はすべて iframe 内で完結させる。\n- view.yaml の audience と各問題の difficulty に合わせて出題順・見せ方を調整する（初心者=易しい○×や択一から始める、エンジニア=関係あて・並べ替えを前に）。難易度バッジを各問題に表示する。\n- 並べ替え問題はドラッグ&ドロップではなく、上下ボタンやクリックで順序を組み立てる方式にする（キーボード・タッチでも操作できるように）。\n- 最後にスコアの集計（n問中m問正解）と「もう一度」ボタンを付ける。スコアはページを再読み込みすると消える旨を画面内に明記する。\n\n# 出力ルール\n- 出力は <!DOCTYPE html> から始まる単一の完結した HTML document 1つだけ（iframe に入れる本体）。\n- inline CSS / inline JS のみ。外部CDN・外部CSS・外部スクリプト・外部読み込みのiframeは使わない。ネットワーク通信・ブラウザストレージ・cookie・親フレームへのアクセスは行わない。\n- デフォルトはライトテーマ。URLハッシュ #theme=dark を読み取ってダークにも対応する（自分の location.hash を見て、hashchange も listen して data-theme を切り替える）。\n- 必ず含める: 全問題の解説 / 関連概念へのポインタ / 出典(source references) / スコア集計 / 次にAIへ聞くとよい質問。\n- このビューは既存のビュー一式に「追加」されます。index.html やプロンプト、既存ビューは変更しないでください。返すのは新しいビューの HTML document だけです。"
+  },
+  {
     "id": "view-free",
     "title": "自由に表現を指定してビューを追加",
     "description": "「こういう表現にしたい」を自分で書いて、新しいビューを追加してもらう。",

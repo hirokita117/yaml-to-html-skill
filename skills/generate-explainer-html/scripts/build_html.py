@@ -18,6 +18,7 @@ A bundle is a *directory* (not a single file):
       views.json            ordered manifest: {"views": [{"id","label","file"}, ...]}
       core.yaml             copied from --core (its absolute path is cited by prompts)
       view.yaml             copied from --view
+      quiz.yaml             copied from --quiz (optional; comprehension-check questions)
       views/
         01-<id>.html        an AI-authored iframe document (full <!DOCTYPE html>)
         02-<id>.html
@@ -35,11 +36,12 @@ view" works. Re-running an existing view (same slugified id) updates it in place
 
 Placeholder substitution (paths, not content)
 ----------------------------------------------
-Prompt strings inside ``prompts.json`` may contain ``{{core_yaml_path}}`` and
-``{{view_yaml_path}}``. Those tokens are replaced with the *absolute path* of the
-copied-in ``core.yaml`` / ``view.yaml`` so a local-file-reading AI can open them. The YAML
-*content* is never embedded into a prompt. Any other ``{{...}}`` token (for example
-``{{希望する表現}}``) is left untouched for the user to fill in.
+Prompt strings inside ``prompts.json`` may contain ``{{core_yaml_path}}``,
+``{{view_yaml_path}}``, and ``{{quiz_yaml_path}}``. Those tokens are replaced with the
+*absolute path* of the copied-in ``core.yaml`` / ``view.yaml`` / ``quiz.yaml`` so a
+local-file-reading AI can open them. The YAML *content* is never embedded into a prompt.
+Any other ``{{...}}`` token (for example ``{{希望する表現}}``) is left untouched for the
+user to fill in.
 
 Example
 -------
@@ -47,9 +49,10 @@ Example
       --bundle ./explainer-bundle \
       --core core.yaml \
       --view view.yaml \
+      --quiz quiz.yaml \
       --prompts prompts.json \
       --view-html "エンジニア=engineer.html" \
-      --view-html "テーブル=table.html"
+      --view-html "クイズ=quiz.html"
 """
 
 from __future__ import annotations
@@ -203,7 +206,8 @@ def render_cards(prompts: list[dict], mapping: dict[str, str]) -> str:
     return "\n".join(cards)
 
 
-def render_meta(core_text: str | None, view_text: str | None) -> tuple[str, str]:
+def render_meta(core_text: str | None, view_text: str | None,
+                quiz_text: str | None = None) -> tuple[str, str]:
     """Return (tab_buttons_html, panels_html) for the YAML viewer panels (display-only)."""
     tabs: list[str] = []
     panels: list[str] = []
@@ -226,6 +230,16 @@ def render_meta(core_text: str | None, view_text: str | None) -> tuple[str, str]
             '<div class="panel hidden" id="panel-view" role="tabpanel">'
             '<p class="panel-note">この人にどう見せると分かりやすいかの方針。表示専用です。</p>'
             f'<pre class="yaml-body">{esc(view_text)}</pre></div>'
+        )
+    if quiz_text is not None:
+        tabs.append(
+            '<button class="tab-btn" type="button" role="tab" aria-selected="false" '
+            'data-panel="panel-quiz">quiz.yaml</button>'
+        )
+        panels.append(
+            '<div class="panel hidden" id="panel-quiz" role="tabpanel">'
+            '<p class="panel-note">理解度チェック用のクイズ定義。表示専用です。</p>'
+            f'<pre class="yaml-body">{esc(quiz_text)}</pre></div>'
         )
     return "\n".join(tabs), "\n".join(panels)
 
@@ -595,15 +609,17 @@ def build(args: argparse.Namespace) -> tuple[str, int]:
 
     core_yaml_path, core_text = copy_yaml(args.core, "core.yaml")
     view_yaml_path, view_text = copy_yaml(args.view, "view.yaml")
+    quiz_yaml_path, quiz_text = copy_yaml(args.quiz, "quiz.yaml")
 
     mapping = {
         "core_yaml_path": core_yaml_path or "(core.yaml は未指定)",
         "view_yaml_path": view_yaml_path or "(view.yaml は未指定)",
+        "quiz_yaml_path": quiz_yaml_path or "(quiz.yaml は未指定)",
     }
 
     prompts = load_prompts(args.prompts)
     cards_html = render_cards(prompts, mapping)
-    meta_tabs, meta_panels = render_meta(core_text, view_text)
+    meta_tabs, meta_panels = render_meta(core_text, view_text, quiz_text)
     view_tabs = render_view_tabs(manifest)
     first_view_src = esc("views/" + manifest[0]["file"] + "#theme=light")
 
@@ -639,8 +655,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "    --bundle ./explainer-bundle \\\n"
             "    --core references/sample-core.yaml \\\n"
             "    --view references/sample-view.yaml \\\n"
+            "    --quiz references/sample-quiz.yaml \\\n"
             "    --prompts references/sample-prompts.json \\\n"
-            '    --view-html "エンジニア=references/sample-iframe.html"\n'
+            '    --view-html "エンジニア=references/sample-iframe.html" \\\n'
+            '    --view-html "クイズ=references/sample-quiz-iframe.html"\n'
         ),
     )
     parser.add_argument("--bundle", required=True,
@@ -651,6 +669,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                              '(repeatable; appends/updates the bundle each run)')
     parser.add_argument("--core", help="path to core.yaml (copied in; abs path cited by prompts)")
     parser.add_argument("--view", help="path to view.yaml (copied in; abs path cited by prompts)")
+    parser.add_argument("--quiz", help="path to quiz.yaml (optional; copied in; abs path "
+                                       "cited by prompts)")
     parser.add_argument("--prompts", required=True,
                         help="path to prompts.json (array of prompt-template objects)")
     parser.add_argument("--title", help="optional header title for the shell")

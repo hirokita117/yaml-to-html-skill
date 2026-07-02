@@ -1,0 +1,177 @@
+version: quiz/v1
+
+# Comprehension-check questions derived from sample-core.yaml (PR #482).
+# Correct answers trace back to core.yaml facts; wrong choices are plausible
+# misreadings and each explanation says why they are wrong.
+target:
+  title: "Add rate limiting to the public API"
+  source_label: "PR #482 (feature/api-rate-limit)"
+  core_ref: "sample-core.yaml"
+
+meta:
+  notes: >
+    Distractors are invented from plausible misreadings; every correct answer comes
+    from a core.yaml concept, relation, or risk. Difficulty is spread low→high and
+    audience_hint marks which items suit beginners vs engineers.
+
+items:
+  - id: q_mw_role
+    type: single_choice
+    question: "RateLimitMiddleware の役割として正しいものはどれ？"
+    difficulty: low
+    choices:
+      - id: ch_reject
+        text: "上限を超えたリクエストをハンドラ実行前に 429 で拒否する"
+      - id: ch_log
+        text: "リクエストの内容をログに記録する"
+      - id: ch_cache
+        text: "レスポンスをキャッシュして高速化する"
+    answer:
+      correct_choice_ids: [ch_reject]
+    explanation: >
+      ミドルウェアは各公開ルートをラップし、ストアにトークンを問い合わせてバケットが
+      空なら 429 を返す。ログ記録やキャッシュはこの PR の役割ではない。
+    related_concept_ids: [c_middleware]
+    audience_hint:
+      recommended_roles: [beginner, engineer]
+    confidence: 0.9
+    source_refs:
+      - id: r_mw
+        path: "src/api/middleware/rate_limit.py"
+        excerpt: "class RateLimitMiddleware: def __call__(self, request, call_next): ..."
+        lines: { start: 14, end: 76 }
+
+  - id: q_store_shared
+    type: true_false
+    question: "TokenBucketStore のバケットは複数インスタンス間で共有される。○か×か？"
+    difficulty: low
+    choices:
+      - id: ch_true
+        text: "○ 共有される"
+      - id: ch_false
+        text: "× 共有されない"
+    answer:
+      correct_choice_ids: [ch_false]
+    explanation: >
+      ストアはインメモリでプロセスごとに独立している。そのため実効的な上限は
+      インスタンス数に比例して増える(risk_distributed)。共有ストアはこの PR の
+      範囲外。
+    related_concept_ids: [c_store]
+    audience_hint:
+      recommended_roles: [beginner]
+    confidence: 0.85
+
+  - id: q_unknown_route
+    type: true_false
+    question: "設定に載っていないルートへのリクエストは、制限なしで通過する。○か×か？"
+    difficulty: medium
+    choices:
+      - id: ch_true
+        text: "○ 制限なしで通過する"
+      - id: ch_false
+        text: "× デフォルトの上限が適用される"
+    answer:
+      correct_choice_ids: [ch_false]
+    explanation: >
+      Per-route limits config は route -> limit のマッピングで、未知のルートには
+      デフォルト値(例: 60 req/min)がフォールバックとして適用される。「設定漏れ =
+      無制限」ではない。
+    related_concept_ids: [c_config]
+    audience_hint:
+      recommended_roles: [beginner, engineer]
+    confidence: 0.95
+
+  - id: q_rel_mw_store
+    type: relation
+    question: "RateLimitMiddleware と TokenBucketStore の関係として正しいものはどれ？"
+    difficulty: medium
+    choices:
+      - id: ch_depends
+        text: "ミドルウェアがストアに依存し、許可/拒否の判断をトークン問い合わせで行う"
+      - id: ch_contains
+        text: "ミドルウェアがストアを内包し、リクエストごとに新しいストアを作る"
+      - id: ch_contrast
+        text: "両者は同じ機能の別実装で、どちらか一方だけが使われる"
+    answer:
+      correct_choice_ids: [ch_depends]
+    explanation: >
+      rel_mw_store は depends_on。ストアが「許可してよいか」の単一の情報源で、
+      ミドルウェアはそこにトークンを要求する。リクエストごとに生成はしないし、
+      代替実装の関係でもない。
+    related_concept_ids: [c_middleware, c_store]
+    related_relation_ids: [rel_mw_store]
+    audience_hint:
+      recommended_roles: [engineer]
+    confidence: 0.95
+
+  - id: q_multi_risks
+    type: multiple_choice
+    question: "この PR に対して core.yaml が挙げているリスクはどれ？（複数選択）"
+    difficulty: medium
+    choices:
+      - id: ch_mem
+        text: "バケットが削除されずメモリが増え続ける可能性"
+      - id: ch_proc
+        text: "インスタンス数に応じて実効上限が増えてしまう"
+      - id: ch_slow
+        text: "トークン計算が重くレイテンシが悪化する"
+    answer:
+      correct_choice_ids: [ch_mem, ch_proc]
+    explanation: >
+      risk_memory(バケットの無限増加)と risk_distributed(プロセスごとの上限)が
+      記録されているリスク。レイテンシ悪化は core.yaml には挙げられていない。
+    related_concept_ids: [c_store, c_middleware]
+    audience_hint:
+      recommended_roles: [engineer, product_manager]
+    confidence: 0.9
+
+  - id: q_request_flow
+    type: ordering
+    question: "リクエストが処理される流れを正しい順に並べ替えてください。"
+    difficulty: high
+    choices:
+      - id: st_key
+        text: "クライアントからキーを導出する"
+      - id: st_config
+        text: "ルートの上限値を設定から引く"
+      - id: st_take
+        text: "ストアにトークンが残っているか問い合わせる"
+      - id: st_result
+        text: "トークンがあれば通し、なければ 429 を返す"
+    answer:
+      correct_order: [st_key, st_config, st_take, st_result]
+    explanation: >
+      ミドルウェアはまずクライアントのキーを読み、ルートごとの上限を設定から
+      引いたうえでストアに問い合わせ、バケットが空なら 429 を返す。ハンドラ実行前に
+      すべて完結する。
+    related_concept_ids: [c_middleware, c_store, c_config]
+    related_relation_ids: [rel_mw_store, rel_mw_config]
+    audience_hint:
+      recommended_roles: [engineer]
+    confidence: 0.85
+
+  - id: q_tests_clock
+    type: single_choice
+    question: "テストが fake clock を使っているのはなぜ？"
+    difficulty: high
+    choices:
+      - id: ch_deterministic
+        text: "トークンの補充が経過時間に依存するため、タイミングを決定的にする"
+      - id: ch_speed
+        text: "テストの実行時間を計測してレポートするため"
+      - id: ch_tz
+        text: "タイムゾーンの違いによるバグを再現するため"
+    answer:
+      correct_choice_ids: [ch_deterministic]
+    explanation: >
+      TokenBucketStore は経過時間でトークンを補充する。実時間に依存すると refill の
+      テストが不安定になるため、fake clock で時間を進めて決定的に検証している。
+    related_concept_ids: [c_tests, c_store]
+    audience_hint:
+      recommended_roles: [engineer]
+    confidence: 0.8
+    source_refs:
+      - id: r_tests
+        path: "tests/api/test_rate_limit.py"
+        excerpt: "def test_rejects_when_bucket_empty(): ..."
+        lines: { start: 1, end: 140 }
