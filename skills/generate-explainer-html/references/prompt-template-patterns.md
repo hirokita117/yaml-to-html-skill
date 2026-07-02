@@ -40,11 +40,15 @@ Key rules for this skill:
 
 ## Placeholders
 
-`build_html.py` substitutes two tokens in each `prompt` with the **absolute path** of the
-copied-in YAML files (not their content):
+`build_html.py` substitutes three tokens in each `prompt` with the **absolute path** of
+the copied-in YAML files (not their content):
 
 - `{{core_yaml_path}}` → absolute path of `<bundle>/core.yaml`
 - `{{view_yaml_path}}` → absolute path of `<bundle>/view.yaml`
+- `{{quiz_yaml_path}}` → absolute path of `<bundle>/quiz.yaml`; when the bundle was built
+  without `--quiz` and no `quiz.yaml` exists, the token becomes `(quiz.yaml は未指定)` —
+  templates that use it should tell the AI to fall back to deriving quiz content from
+  `core.yaml` in that case.
 
 Any other `{{...}}` token (for example `{{希望する表現}}`) is **left as-is** so the user
 can fill it in before sending. This is how the "free-form" template works.
@@ -55,6 +59,7 @@ A template should reference the paths like this and instruct the AI to open them
 # 参照（必ず読み込む）
 - core.yaml: {{core_yaml_path}}
 - view.yaml: {{view_yaml_path}}
+- quiz.yaml: {{quiz_yaml_path}}   （クイズ系テンプレートのみ）
 これらのファイルを開いてから作ってください。yml の中身はこのプロンプトには貼り付けていません。
 ```
 
@@ -99,7 +104,12 @@ added as a new switchable view.
 4. **Engineer** — dependencies, changed files, reading order, review points, risks, tests.
 5. **PdM / Biz** — what changes, why it matters, user/business impact, decision points,
    risks and things to confirm.
-6. **Free-form** — a `{{希望する表現}}` placeholder the user fills in.
+6. **Quiz** — also reads `{{quiz_yaml_path}}` (falling back to deriving items from
+   `core.yaml` when unset); outputs one interactive quiz view (choice / true-false /
+   relation / ordering) that grades inline and reveals explanations, adapts order to the
+   `view.yaml` audience and per-item difficulty, and states that the score resets on
+   reload.
+7. **Free-form** — a `{{希望する表現}}` placeholder the user fills in.
 
 > There is intentionally **no "regenerate the whole HTML"** template. The shell and the
 > prompts are never rewritten by an AI — only `build_html.py` writes them. To change the

@@ -6,11 +6,12 @@
 name: generate-explainer-html
 version: 2
 description: >
-  Turn a core.yaml (meaning) + view.yaml (presentation strategy) pair into a self-contained
-  HTML bundle. The bundle is a directory: a light/dark shell (index.html) whose right pane
-  switches between multiple iframe view documents, plus copyable prompt templates that ask a
-  local-file-reading AI to add another switchable view. Views are additive. Produce the YAML
-  first with the generate-explainer-yaml skill.
+  Turn a core.yaml (meaning) + view.yaml (presentation strategy) pair — plus quiz.yaml when
+  present — into a self-contained HTML bundle. The bundle is a directory: a light/dark
+  shell (index.html) whose right pane switches between multiple iframe view documents, plus
+  copyable prompt templates that ask a local-file-reading AI to add another switchable
+  view. An interactive quiz tab is added by default unless the user explicitly declines.
+  Views are additive. Produce the YAML first with the generate-explainer-yaml skill.
 
 use_when:
   - user has (or wants) a core.yaml/view.yaml pair and wants a visual HTML explainer
@@ -31,17 +32,24 @@ model:
 # (view.yaml) produced by generate-explainer-yaml; here they become switchable views.
 workflow:
   - id: read_yaml
-    goal: read core.yaml and view.yaml by their absolute path (from generate-explainer-yaml
-      or the user); if missing, defer to generate-explainer-yaml
+    goal: read core.yaml, view.yaml, and quiz.yaml (when present) by their absolute path
+      (from generate-explainer-yaml or the user); if missing, defer to
+      generate-explainer-yaml
   - id: author_view_html
     goal: author ONE iframe view document (full self-contained HTML); pick forms from
       view.yaml; include concepts, relations, reading order, source refs, next questions;
       light theme by default; read #theme from the URL hash (load + hashchange)
     rules: references/html-generation-rules.md
+  - id: author_quiz_view_html
+    goal: author an interactive quiz view from quiz.yaml (or derive items from core.yaml
+      when it is absent) — answer, instant grading, explanation, audience/difficulty
+      adaptive ordering; DEFAULT step, skip only when the user explicitly declines a quiz
+    rules: references/quiz-view-rules.md
   - id: author_prompts_json
     goal: author the "add a view" templates (table, worktree, beginner, engineer, pdm/biz,
-      free-form); cite YAML by absolute path via {{core_yaml_path}} / {{view_yaml_path}};
-      never embed YAML content; never a whole-HTML regenerate template
+      quiz, free-form); cite YAML by absolute path via {{core_yaml_path}} /
+      {{view_yaml_path}} / {{quiz_yaml_path}}; never embed YAML content; never a
+      whole-HTML regenerate template
     rules: references/prompt-template-patterns.md
   - id: build
     goal: build/grow the bundle (append/update views)
@@ -61,8 +69,9 @@ tools:
     command: python3 scripts/build_html.py
     description: >
       Build/grow the bundle: write the shell (index.html), merge views into views.json,
-      copy core.yaml/view.yaml in, and render prompt cards. Substitutes {{core_yaml_path}} /
-      {{view_yaml_path}} (absolute paths) into prompts. Assembler, not a renderer.
+      copy core.yaml/view.yaml/quiz.yaml in, and render prompt cards. Substitutes
+      {{core_yaml_path}} / {{view_yaml_path}} / {{quiz_yaml_path}} (absolute paths) into
+      prompts. Assembler, not a renderer.
     args:
       - name: --bundle
         required: true
@@ -77,6 +86,9 @@ tools:
       - name: --view
         required: false
         description: path to view.yaml (copied in; abs path cited by prompts)
+      - name: --quiz
+        required: false
+        description: path to quiz.yaml (optional; copied in; abs path cited by prompts)
       - name: --prompts
         required: true
         description: path to prompts.json (array of prompt-template objects)
@@ -123,10 +135,12 @@ constraints:
 inputs:
   - absolute path to core.yaml
   - absolute path to view.yaml
+  - absolute path to quiz.yaml (optional; the quiz tab is still expected by default)
   - the desired representation(s) / reader(s)
 
 outputs:
-  - a bundle directory (index.html + views.json + core.yaml/view.yaml + views/*.html)
+  - a bundle directory (index.html + views.json + core.yaml/view.yaml/quiz.yaml +
+    views/*.html, incl. a quiz view by default)
 
 open_note: >
   Chrome/Edge block file:// iframe loads; open index.html in Firefox over file://, or serve
@@ -135,8 +149,10 @@ open_note: >
 references:
   - SKILL.md
   - references/html-generation-rules.md
+  - references/quiz-view-rules.md
   - references/output-bundle-structure.md
   - references/prompt-template-patterns.md
   - references/sample-iframe.html
+  - references/sample-quiz-iframe.html
   - references/sample-prompts.json
   - references/examples.md
