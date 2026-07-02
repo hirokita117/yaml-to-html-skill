@@ -11,7 +11,7 @@
       "name": "yaml-to-html",
       "source": "./",
       "description": "Two skills: generate-explainer-yaml captures meaning (core.yaml) + strategy (view.yaml) from a document/repo/PR/spec; generate-explainer-html builds an offline light/dark bundle with switchable, additive iframe views and copyable add-a-view prompts.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "category": "documentation",
       "keywords": [
         "html",
